@@ -9,7 +9,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums for strict typing
+// ============================================================================
+// ENUMS
+// ============================================================================
+
 enum Role {
   ADMIN
   EDITOR
@@ -20,7 +23,17 @@ enum ConversationStatus {
   ACTIVE
   COMPLETED
   FAILED
+  ABANDONED
 }
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+// ============================================================================
+// CORE MODELS
+// ============================================================================
 
 // 1. Organization ( The Tenant )
 model Organization {
@@ -33,14 +46,26 @@ model Organization {
   stripe_subscription_id String?
   current_plan           String? // STARTER, PRO, ENTERPRISE
   credit_balance         Int     @default(0) // Minutes available
+  reserved_balance       Int     @default(0) // Minutes reserved for in-progress calls (pre-auth)
   billing_email          String?
 
+  // Security
   api_key_hash String @unique
 
-  users          User[]
-  agents         Agent[]
-  transactions   Transaction[]
-  knowledgeBases KnowledgeBase[]
+  // Optimistic locking — prevents concurrent billing race conditions
+  version Int @default(0)
+
+  // Soft delete
+  deletedAt DateTime?
+
+  // Relations
+  users            User[]
+  agents           Agent[]
+  transactions     Transaction[]
+  knowledgeBases   KnowledgeBase[]
+  callReservations CallReservation[]
+  toolPermissions  ToolPermission[]
+  auditLogs        AuditLog[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -50,13 +75,17 @@ model Organization {
 
 // 2. User ( The Member )
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String // Hashed
-  role     Role   @default(VIEWER)
+  id    String @id @default(uuid())
+  email String @unique
+  role  Role   @default(VIEWER)
+
+  // Soft delete
+  deletedAt DateTime?
 
   org_id String
   org    Organization @relation(fields: [org_id], references: [id])
+
+  auditLogs AuditLog[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -70,10 +99,13 @@ model Agent {
   name          String
   system_prompt String  @db.Text
   voice_id      String
-  phone_number  String? // NEW: Twilio phone number for this agent
+  phone_number  String? // Twilio phone number for this agent
 
   tools_enabled Json @default("[]")
   llm_config    Json @default("{}")
+
+  // Soft delete
+  deletedAt DateTime?
 
   kb_id String?
   kb    KnowledgeBase? @relation(fields: [kb_id], references: [id])
@@ -87,21 +119,26 @@ model Agent {
   updated_at DateTime @updatedAt
 
   @@index([kb_id])
-  @@index([phone_number]) // NEW: Index for quick lookup
+  @@index([phone_number])
+  @@index([org_id])
   @@map("agents")
 }
 
 // 4. Conversation ( The Call )
 model Conversation {
   id         String             @id @default(uuid())
-  twilio_sid String             @unique // The external ID from Twilio
+  twilio_sid String             @unique
   status     ConversationStatus @default(ACTIVE)
 
   start_time DateTime  @default(now())
   end_time   DateTime?
 
-  cost_accrued    Float  @default(0.000) // Precision matters for billing
-  sentiment_score Float? // -1.0 (Bad) to 1.0 (Good)
+  // Decimal avoids floating-point rounding errors on financial values
+  cost_accrued    Decimal @default(0) @db.Decimal(10, 6)
+  sentiment_score Float?  // -1.0 (negative) to 1.0 (positive)
+
+  // Soft delete
+  deletedAt DateTime?
 
   agent_id String
   agent    Agent  @relation(fields: [agent_id], references: [id])
@@ -109,7 +146,8 @@ model Conversation {
   messages Message[]
 
   @@index([agent_id])
-  @@index([start_time]) // Critical for "Show me calls from today" dashboards
+  @@index([start_time])
+  @@index([agent_id, start_time]) // compound — dashboard "calls today per agent"
   @@map("conversations")
 }
 
@@ -120,31 +158,105 @@ model Message {
   content String @db.Text
 
   tokens     Int @default(0)
-  latency_ms Int @default(0) // Critical for performance monitoring
+  latency_ms Int @default(0)
 
   conversation_id String
   conversation    Conversation @relation(fields: [conversation_id], references: [id])
 
   created_at DateTime @default(now())
 
-  @@index([conversation_id]) // Critical for fetching chat history quickly
+  @@index([conversation_id])
   @@map("messages")
 }
 
 // ============================================================================
-// RAG MODELS - Knowledge Base & Hybrid Search
+// BILLING MODELS
 // ============================================================================
 
-// 6. KnowledgeBase ( The RAG Container )
+// 6. Transaction ( The Billing Ledger )
+model Transaction {
+  id     String          @id @default(uuid())
+  org_id String
+  org    Organization    @relation(fields: [org_id], references: [id])
+
+  type          TransactionType
+  amount        Int    // Minutes
+  description   String
+  balance_after Int
+
+  conversation_id String?
+
+  created_at DateTime @default(now())
+
+  @@index([org_id])
+  @@index([org_id, created_at]) // compound — billing history queries
+  @@map("transactions")
+}
+
+// 7. CallReservation ( Billing Pre-Authorization )
+// Created when a call starts; deleted when the call ends and final charge is applied.
+model CallReservation {
+  id               String       @id @default(uuid())
+  call_sid         String       @unique
+  org_id           String
+  org              Organization @relation(fields: [org_id], references: [id])
+  reserved_minutes Int
+
+  created_at DateTime @default(now())
+
+  @@index([org_id])
+  @@map("call_reservations")
+}
+
+// ============================================================================
+// ACCESS CONTROL MODELS
+// ============================================================================
+
+// 8. ToolPermission ( Per-org tool access control )
+model ToolPermission {
+  id                 String       @id @default(uuid())
+  org_id             String
+  org                Organization @relation(fields: [org_id], references: [id])
+  tool_name          String
+  enabled            Boolean      @default(true)
+  rate_limit_per_min Int          @default(10)
+
+  @@unique([org_id, tool_name])
+  @@index([org_id])
+  @@map("tool_permissions")
+}
+
+// 9. AuditLog ( Immutable change history )
+model AuditLog {
+  id             String       @id @default(uuid())
+  org_id         String
+  org            Organization @relation(fields: [org_id], references: [id])
+  user_id        String?
+  user           User?        @relation(fields: [user_id], references: [id])
+  action         String       // e.g. "UPDATE_AGENT", "CANCEL_SUBSCRIPTION"
+  entity         String       // e.g. "Agent", "Organization"
+  previous_value Json?
+  new_value      Json?
+
+  created_at DateTime @default(now())
+
+  @@index([org_id, created_at])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// RAG MODELS
+// ============================================================================
+
+// 10. KnowledgeBase ( The RAG Container )
 model KnowledgeBase {
   id          String  @id @default(uuid())
   name        String
   description String? @db.Text
 
-  // Embedding configuration
-  embedding_model String @default("text-embedding-004") // Google's model
-  chunk_size      Int    @default(512) // Characters per chunk
-  chunk_overlap   Int    @default(50) // Overlap for context continuity
+  embedding_model String @default("text-embedding-004")
+  chunk_size      Int    @default(512)
+  chunk_overlap   Int    @default(50)
 
   org_id String
   org    Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
@@ -159,19 +271,21 @@ model KnowledgeBase {
   @@map("knowledge_bases")
 }
 
-// 7. KnowledgeChunk ( The RAG Document Fragments )
+// 11. KnowledgeChunk ( The RAG Document Fragments )
 model KnowledgeChunk {
   id      String @id @default(uuid())
   content String @db.Text
 
-  // Vector embedding for semantic search (1536 dimensions for text-embedding-004)
+  // SHA-256 hash of content for chunk deduplication before insert
+  content_hash String?
+
+  // pgvector embedding — HNSW index applied via raw SQL migration
   embedding Unsupported("vector(768)")?
 
-  // Full-text search vector for keyword search
+  // PostgreSQL full-text search vector — Gin index below
   content_tsv Unsupported("tsvector")?
 
-  // Metadata for filtering and tracing
-  metadata Json @default("{}") // { "source": "faq.pdf", "page": 5, "section": "returns" }
+  metadata Json @default("{}")
 
   kb_id String
   kb    KnowledgeBase @relation(fields: [kb_id], references: [id], onDelete: Cascade)
@@ -180,26 +294,7 @@ model KnowledgeChunk {
   updated_at DateTime @updatedAt
 
   @@index([kb_id])
-  @@index([content_tsv], type: Gin) // Full-text search index
+  @@index([content_hash])
+  @@index([content_tsv], type: Gin)
   @@map("knowledge_chunks")
-}
-
-// 8. Transaction ( The Billing Ledger )
-model Transaction {
-  id     String       @id @default(uuid())
-  org_id String
-  org    Organization @relation(fields: [org_id], references: [id])
-
-  type          String // CREDIT, DEBIT
-  amount        Int // Minutes
-  description   String
-  balance_after Int
-
-  conversation_id String?
-
-  created_at DateTime @default(now())
-
-  @@index([org_id])
-  @@index([created_at])
-  @@map("transactions")
 }

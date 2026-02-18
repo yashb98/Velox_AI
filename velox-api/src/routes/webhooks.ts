@@ -1,208 +1,150 @@
-// velox-api/src/routes/voice.ts
+// velox-api/src/routes/webhooks.ts
+//
+// Stripe webhook receiver.
+// IMPORTANT: This router uses express.raw() (NOT express.json()) so that Stripe
+// can verify the HMAC signature on the raw request body. It must be registered
+// in app.ts BEFORE the global express.json() middleware is applied.
 
-import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { billingService } from '../services/billingService';
-import { logger } from '../utils/logger';
+import express, { Router } from "express";
+import Stripe from "stripe";
+import { stripe } from "../config/stripe";
+import { billingService } from "../services/billingService";
+import { logger } from "../utils/logger";
 
 const router = Router();
-const prisma = new PrismaClient();
 
-/**
- * Twilio incoming call webhook
- * This endpoint receives the initial call and returns TwiML
- */
-router.post('/incoming', async (req, res) => {
-  try {
-    const { CallSid, From, To } = req.body;
+router.post(
+  "/",
+  // Raw body is required for Stripe webhook signature verification
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
 
-    logger.info(`Incoming call: ${CallSid} from ${From} to ${To}`);
-
-    // Find the agent associated with this phone number
-    // You'll need to store phone_number in the Agent table
-    const agent = await prisma.agent.findFirst({
-      where: {
-        // phone_number: To, // Assuming you have this field
-      },
-      include: {
-        org: true,
-      },
-    });
-
-    if (!agent) {
-      logger.warn(`No agent found for number ${To}`);
-      
-      const twiml = `
-        <?xml version="1.0" encoding="UTF-8"?>
-        <Response>
-          <Say voice="Polly.Joanna">
-            Sorry, this number is not configured.
-          </Say>
-          <Hangup/>
-        </Response>
-      `;
-      
-      return res.type('text/xml').send(twiml);
+    if (!sig) {
+      logger.warn("Stripe webhook received without signature header");
+      return res.status(400).send("Missing stripe-signature header");
     }
 
-    // ✅ BILLING ENFORCEMENT: Check if organization has minutes
-    const hasMinutes = await billingService.hasMinutes(agent.org_id, 1);
-    
-    if (!hasMinutes) {
-      logger.warn(`Org ${agent.org_id} has insufficient balance. Rejecting call ${CallSid}`);
-      
-      // Return TwiML to reject call with a polite message
-      const twiml = `
-        <?xml version="1.0" encoding="UTF-8"?>
-        <Response>
-          <Say voice="Polly.Joanna">
-            We're sorry, but this service is currently unavailable due to insufficient account balance. 
-            Please contact support to add more minutes and continue using this service.
-          </Say>
-          <Hangup/>
-        </Response>
-      `;
-      
-      return res.type('text/xml').send(twiml);
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      logger.error("STRIPE_WEBHOOK_SECRET is not set — cannot verify webhook");
+      return res.status(500).send("Server configuration error");
     }
 
-    // Create conversation record
-    const conversation = await prisma.conversation.create({
-      data: {
-        twilio_sid: CallSid,
-        status: 'ACTIVE',
-        agent_id: agent.id,
-        start_time: new Date(),
-      },
-    });
+    let event: Stripe.Event;
 
-    logger.info(`Created conversation ${conversation.id} for call ${CallSid}`);
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err: any) {
+      logger.error({ err }, "Stripe webhook signature verification failed");
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
-    // Return TwiML with WebSocket connection
-    const wsUrl = `wss://${req.get('host')}/media-stream?callSid=${CallSid}&agentId=${agent.id}`;
-    
-    const twiml = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <Response>
-        <Connect>
-          <Stream url="${wsUrl}">
-            <Parameter name="agentId" value="${agent.id}" />
-            <Parameter name="conversationId" value="${conversation.id}" />
-          </Stream>
-        </Connect>
-      </Response>
-    `;
+    logger.info({ type: event.type, id: event.id }, "Stripe webhook received");
 
-    res.type('text/xml').send(twiml);
-  } catch (error) {
-    logger.error({ error }, 'Error handling incoming call');
-    
-    const errorTwiml = `
-      <?xml version="1.0" encoding="UTF-8"?>
-      <Response>
-        <Say voice="Polly.Joanna">
-          We're sorry, but we're experiencing technical difficulties. Please try again later.
-        </Say>
-        <Hangup/>
-      </Response>
-    `;
-    
-    res.type('text/xml').send(errorTwiml);
+    try {
+      switch (event.type) {
+        // Fired when a customer completes Stripe Checkout (first subscription payment)
+        case "checkout.session.completed": {
+          const session = event.data.object as Stripe.Checkout.Session;
+          const { org_id, plan_type } = session.metadata ?? {};
+
+          if (!org_id || !plan_type) {
+            logger.error(
+              { sessionId: session.id },
+              "checkout.session.completed missing org_id or plan_type metadata"
+            );
+            break;
+          }
+
+          await billingService.handleSubscriptionSuccess(
+            org_id,
+            session.customer as string,
+            session.subscription as string,
+            plan_type
+          );
+
+          logger.info(
+            { orgId: org_id, plan: plan_type },
+            "Subscription activated — credits applied"
+          );
+          break;
+        }
+
+        // Fired on every successful renewal invoice
+        case "invoice.payment_succeeded": {
+          const invoice = event.data.object as Stripe.Invoice;
+
+          // In Stripe API v20+, invoice.parent holds the subscription reference
+          const subscriptionId =
+            invoice.parent?.type === "subscription_details"
+              ? (invoice.parent.subscription_details?.subscription as string | undefined)
+              : undefined;
+
+          if (!subscriptionId) break;
+
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          const { org_id, plan_type } = sub.metadata ?? {};
+
+          if (!org_id || !plan_type) {
+            logger.warn(
+              { subscriptionId: sub.id },
+              "invoice.payment_succeeded subscription missing org metadata"
+            );
+            break;
+          }
+
+          await billingService.handleSubscriptionSuccess(
+            org_id,
+            invoice.customer as string,
+            sub.id,
+            plan_type
+          );
+
+          logger.info(
+            { orgId: org_id, plan: plan_type },
+            "Subscription renewed — credits re-applied"
+          );
+          break;
+        }
+
+        // Fired when a subscription is cancelled (by the customer or via dunning)
+        case "customer.subscription.deleted": {
+          const sub = event.data.object as Stripe.Subscription;
+          const { org_id } = sub.metadata ?? {};
+
+          if (!org_id) {
+            logger.warn(
+              { subscriptionId: sub.id },
+              "customer.subscription.deleted missing org_id metadata"
+            );
+            break;
+          }
+
+          await billingService.cancelSubscription(org_id);
+          logger.info({ orgId: org_id }, "Subscription cancelled");
+          break;
+        }
+
+        default:
+          // Unhandled event types are fine — Stripe sends many event types
+          logger.debug({ type: event.type }, "Unhandled Stripe event type");
+      }
+    } catch (err) {
+      logger.error(
+        { err, eventType: event.type },
+        "Error processing Stripe webhook event"
+      );
+      // Return 500 so Stripe retries delivery
+      return res.status(500).json({ error: "Webhook handler error" });
+    }
+
+    // Acknowledge receipt — Stripe considers anything other than 2xx a failure and retries
+    res.json({ received: true });
   }
-});
-
-/**
- * Call status callback
- * Twilio sends updates about call status here
- */
-router.post('/status', async (req, res) => {
-  try {
-    const { CallSid, CallStatus } = req.body;
-
-    logger.info(`Call status update: ${CallSid} - ${CallStatus}`);
-
-    // Find conversation
-    const conversation = await prisma.conversation.findUnique({
-      where: { twilio_sid: CallSid },
-    });
-
-    if (!conversation) {
-      logger.warn(`Conversation not found for CallSid: ${CallSid}`);
-      return res.sendStatus(200);
-    }
-
-    // Update conversation status based on Twilio status
-    let conversationStatus: 'ACTIVE' | 'COMPLETED' | 'FAILED' = 'ACTIVE';
-    
-    switch (CallStatus) {
-      case 'completed':
-        conversationStatus = 'COMPLETED';
-        break;
-      case 'failed':
-      case 'busy':
-      case 'no-answer':
-      case 'canceled':
-        conversationStatus = 'FAILED';
-        break;
-    }
-
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        status: conversationStatus,
-        end_time: ['completed', 'failed', 'busy', 'no-answer', 'canceled'].includes(CallStatus)
-          ? new Date()
-          : undefined,
-      },
-    });
-
-    logger.info(`Updated conversation ${conversation.id} status to ${conversationStatus}`);
-
-    res.sendStatus(200);
-  } catch (error) {
-    logger.error({ error }, 'Error handling call status');
-    res.sendStatus(500);
-  }
-});
-
-/**
- * Test endpoint - simulate a call without Twilio (for development)
- */
-router.post('/test', async (req, res) => {
-  try {
-    const { agentId, message } = req.body;
-
-    const agent = await prisma.agent.findUnique({
-      where: { id: agentId },
-      include: { org: true },
-    });
-
-    if (!agent) {
-      return res.status(404).json({ error: 'Agent not found' });
-    }
-
-    // Check balance
-    const hasMinutes = await billingService.hasMinutes(agent.org_id, 1);
-    
-    if (!hasMinutes) {
-      return res.status(402).json({ 
-        error: 'Insufficient balance',
-        message: 'Please add more minutes to continue',
-      });
-    }
-
-    // Process the test message
-    // ... your LLM processing logic here
-
-    res.json({
-      success: true,
-      response: 'Test response',
-      balance: agent.org.credit_balance,
-    });
-  } catch (error) {
-    logger.error({ error }, 'Test endpoint error');
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+);
 
 export default router;
