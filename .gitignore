@@ -1,1 +1,9 @@
 .terraform/
+node_modules/
+velox-api/node_modules/
+velox-web/node_modules/
+*.log
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
