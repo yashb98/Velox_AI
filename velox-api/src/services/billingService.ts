@@ -106,52 +106,75 @@ export class BillingService {
   }
 
   /**
-   * Deduct minutes from organization balance
-   * Returns true if deduction was successful, false if insufficient balance
+   * Deduct minutes from organization balance using optimistic locking.
+   *
+   * Uses a read-then-CAS pattern:
+   *  1. Read current version + balance
+   *  2. Attempt UPDATE WHERE version = $read_version AND credit_balance >= minutes
+   *  3. If 0 rows affected, another process won the race — retry up to MAX_RETRIES
+   *
+   * This prevents revenue leakage under concurrent call load where multiple
+   * billingInterval ticks could otherwise both read the same balance and both
+   * decrement past zero.
+   *
+   * Returns true if deduction succeeded, false if balance was insufficient.
    */
-  async deductMinutes(orgId: string, minutes: number, conversationId: string) {
-    try {
-      logger.info(`Attempting to deduct ${minutes} minutes from org ${orgId}`);
+  async deductMinutes(orgId: string, minutes: number, conversationId: string): Promise<boolean> {
+    const MAX_RETRIES = 3;
 
-      // Atomic deduction with balance check
-      const result = await prisma.$executeRaw`
-        UPDATE organizations
-        SET credit_balance = credit_balance - ${minutes}
-        WHERE id = ${orgId}
-        AND credit_balance >= ${minutes}
-        RETURNING *
-      `;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      // Step 1: Read current version and balance
+      const org = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { credit_balance: true, version: true },
+      });
 
-      if (result === 0) {
-        logger.warn(`Insufficient balance for org ${orgId}. Deduction failed.`);
+      if (!org || org.credit_balance < minutes) {
+        logger.warn(
+          { orgId, required: minutes, balance: org?.credit_balance ?? 0 },
+          'Insufficient credit balance — deduction skipped'
+        );
         return false;
       }
 
-      // Get updated balance
-      const org = await prisma.organization.findUnique({
-        where: { id: orgId },
-        select: { credit_balance: true },
-      });
+      // Step 2: Conditional update — only commits if no other writer changed version
+      const affected: number = await prisma.$executeRaw`
+        UPDATE organizations
+        SET credit_balance = credit_balance - ${minutes},
+            version        = version + 1,
+            updated_at     = now()
+        WHERE id             = ${orgId}
+          AND version        = ${org.version}
+          AND credit_balance >= ${minutes}
+      `;
 
-      logger.info(`Deducted ${minutes} minutes from org ${orgId}. New balance: ${org?.credit_balance}`);
+      if (affected > 0) {
+        // Step 3: Record the ledger entry
+        const newBalance = org.credit_balance - minutes;
+        await prisma.transaction.create({
+          data: {
+            org_id: orgId,
+            type: 'DEBIT',
+            amount: minutes,
+            description: `Call usage — conversation ${conversationId}`,
+            balance_after: newBalance,
+            conversation_id: conversationId,
+          },
+        });
 
-      // Create transaction record
-      await prisma.transaction.create({
-        data: {
-          org_id: orgId,
-          type: 'DEBIT',
-          amount: minutes,
-          description: `Call usage - Conversation ${conversationId}`,
-          balance_after: org?.credit_balance || 0,
-          conversation_id: conversationId,
-        },
-      });
+        logger.info(
+          { orgId, minutes, newBalance, attempt },
+          'Minutes deducted successfully'
+        );
+        return true;
+      }
 
-      return true;
-    } catch (error) {
-      logger.error({ error }, 'Failed to deduct minutes');
-      throw error;
+      // Step 4: version changed — another process updated concurrently, retry
+      logger.warn({ orgId, attempt }, 'Optimistic lock conflict — retrying deduction');
     }
+
+    logger.error({ orgId, minutes }, 'deductMinutes: max retries exceeded — possible race condition');
+    return false;
   }
 
   /**

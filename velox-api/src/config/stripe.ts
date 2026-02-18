@@ -33,4 +33,18 @@ export const STRIPE_PLANS = {
   },
 };
 
+// In production, all three price IDs must be set or Stripe calls will fail
+// with an opaque "No such price" error — fail fast instead.
+if (process.env.NODE_ENV === 'production') {
+  const missingPriceIds = Object.entries(STRIPE_PLANS)
+    .filter(([, plan]) => !plan.priceId)
+    .map(([planName]) => `STRIPE_${planName}_PRICE_ID`);
+
+  if (missingPriceIds.length > 0) {
+    throw new Error(
+      `Missing required Stripe price ID env vars: ${missingPriceIds.join(', ')}`
+    );
+  }
+}
+
 logger.info('Stripe initialized');

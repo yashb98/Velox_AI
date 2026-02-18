@@ -137,8 +137,10 @@ export default function Billing() {
         cancelUrl: `${window.location.origin}/billing?canceled=true`,
       })
 
-      if (response.data.sessionId) {
-        window.location.href = `${import.meta.env.VITE_STRIPE_CHECKOUT_URL}?session_id=${response.data.sessionId}`
+      // Use the fully-formed Stripe Checkout URL returned by the backend.
+      // The backend returns session.url directly; no need for VITE_STRIPE_CHECKOUT_URL.
+      if (response.data.url) {
+        window.location.href = response.data.url
       }
     } catch (error: any) {
       console.error('Checkout failed:', error)
