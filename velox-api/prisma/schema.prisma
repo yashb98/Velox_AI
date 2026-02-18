@@ -1,0 +1,205 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for strict typing
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+// 1. Organization ( The Tenant )
+model Organization {
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
+
+  // Billing
+  stripe_customer_id     String?
+  stripe_subscription_id String?
+  current_plan           String? // STARTER, PRO, ENTERPRISE
+  credit_balance         Int     @default(0) // Minutes available
+  billing_email          String?
+
+  api_key_hash String @unique
+
+  users          User[]
+  agents         Agent[]
+  transactions   Transaction[]
+  knowledgeBases KnowledgeBase[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("organizations")
+}
+
+// 2. User ( The Member )
+model User {
+  id       String @id @default(uuid())
+  email    String @unique
+  password String // Hashed
+  role     Role   @default(VIEWER)
+
+  org_id String
+  org    Organization @relation(fields: [org_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("users")
+}
+
+// 3. Agent ( The AI Config )
+model Agent {
+  id            String  @id @default(uuid())
+  name          String
+  system_prompt String  @db.Text
+  voice_id      String
+  phone_number  String? // NEW: Twilio phone number for this agent
+
+  tools_enabled Json @default("[]")
+  llm_config    Json @default("{}")
+
+  kb_id String?
+  kb    KnowledgeBase? @relation(fields: [kb_id], references: [id])
+
+  org_id String
+  org    Organization @relation(fields: [org_id], references: [id])
+
+  conversations Conversation[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([kb_id])
+  @@index([phone_number]) // NEW: Index for quick lookup
+  @@map("agents")
+}
+
+// 4. Conversation ( The Call )
+model Conversation {
+  id         String             @id @default(uuid())
+  twilio_sid String             @unique // The external ID from Twilio
+  status     ConversationStatus @default(ACTIVE)
+
+  start_time DateTime  @default(now())
+  end_time   DateTime?
+
+  cost_accrued    Float  @default(0.000) // Precision matters for billing
+  sentiment_score Float? // -1.0 (Bad) to 1.0 (Good)
+
+  agent_id String
+  agent    Agent  @relation(fields: [agent_id], references: [id])
+
+  messages Message[]
+
+  @@index([agent_id])
+  @@index([start_time]) // Critical for "Show me calls from today" dashboards
+  @@map("conversations")
+}
+
+// 5. Message ( The Audit Trail )
+model Message {
+  id      String @id @default(uuid())
+  role    String // user, assistant, system, tool
+  content String @db.Text
+
+  tokens     Int @default(0)
+  latency_ms Int @default(0) // Critical for performance monitoring
+
+  conversation_id String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+
+  created_at DateTime @default(now())
+
+  @@index([conversation_id]) // Critical for fetching chat history quickly
+  @@map("messages")
+}
+
+// ============================================================================
+// RAG MODELS - Knowledge Base & Hybrid Search
+// ============================================================================
+
+// 6. KnowledgeBase ( The RAG Container )
+model KnowledgeBase {
+  id          String  @id @default(uuid())
+  name        String
+  description String? @db.Text
+
+  // Embedding configuration
+  embedding_model String @default("text-embedding-004") // Google's model
+  chunk_size      Int    @default(512) // Characters per chunk
+  chunk_overlap   Int    @default(50) // Overlap for context continuity
+
+  org_id String
+  org    Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+
+  agents Agent[]
+  chunks KnowledgeChunk[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([org_id])
+  @@map("knowledge_bases")
+}
+
+// 7. KnowledgeChunk ( The RAG Document Fragments )
+model KnowledgeChunk {
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  // Vector embedding for semantic search (1536 dimensions for text-embedding-004)
+  embedding Unsupported("vector(768)")?
+
+  // Full-text search vector for keyword search
+  content_tsv Unsupported("tsvector")?
+
+  // Metadata for filtering and tracing
+  metadata Json @default("{}") // { "source": "faq.pdf", "page": 5, "section": "returns" }
+
+  kb_id String
+  kb    KnowledgeBase @relation(fields: [kb_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([kb_id])
+  @@index([content_tsv], type: Gin) // Full-text search index
+  @@map("knowledge_chunks")
+}
+
+// 8. Transaction ( The Billing Ledger )
+model Transaction {
+  id     String       @id @default(uuid())
+  org_id String
+  org    Organization @relation(fields: [org_id], references: [id])
+
+  type          String // CREDIT, DEBIT
+  amount        Int // Minutes
+  description   String
+  balance_after Int
+
+  conversation_id String?
+
+  created_at DateTime @default(now())
+
+  @@index([org_id])
+  @@index([created_at])
+  @@map("transactions")
+}
