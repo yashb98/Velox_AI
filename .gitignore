@@ -1,9 +1,20 @@
+# Infrastructure
 .terraform/
+*.tfstate
+*.tfstate.*
+
+# Dependencies
 node_modules/
-velox-api/node_modules/
-velox-web/node_modules/
+
+# Logs
 *.log
+
+# Environment
 .env
 .env.local
+
+# System
 .DS_Store
+
+# Build outputs
 *.tsbuildinfo
