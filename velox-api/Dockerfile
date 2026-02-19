@@ -36,6 +36,7 @@ ENV NODE_ENV=production
 RUN apk add --no-cache openssl
 
 # Copy package.json and install production deps
+# prisma is kept as a prod dep so `prisma migrate deploy` works at startup
 COPY package*.json ./
 COPY prisma ./prisma/
 RUN npm ci --omit=dev
@@ -47,11 +48,15 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 # Copy built TypeScript output
 COPY --from=builder /app/dist ./dist
 
+# Copy entrypoint script that runs migrations then starts the server
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
 # Don't run as root (Security Best Practice)
 USER node
 
 # Expose the port Cloud Run expects
 EXPOSE 8080
 
-# Start the server (tsconfig rootDir="./" so output is dist/src/server.js)
+# Run migrations then start server
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "dist/src/server.js"]

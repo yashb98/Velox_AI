@@ -24,8 +24,9 @@
 #   --profile mlflow → add MLflow experiment tracking UI
 #   --profile slm --profile mlflow → everything
 #
-# ── Run migrations after first start ────────────────────────────────────────
-#   docker compose exec api npx prisma migrate deploy
+# ── Migrations run automatically on API startup via docker-entrypoint.sh ────
+#   New DB: auto-applied on first boot
+#   Existing DB without migration history: auto-baselined then deployed
 #
 # ── Stripe webhooks (local dev) ──────────────────────────────────────────────
 #   stripe listen --forward-to http://localhost:8080/stripe/webhook
@@ -103,7 +104,7 @@ services:
     volumes:
       - mlflow_data:/mlflow
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/')\" 2>/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -268,7 +269,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ | grep -q html"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ | grep -q html"]
       interval: 20s
       timeout: 5s
       retries: 3
