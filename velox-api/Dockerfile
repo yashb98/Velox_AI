@@ -5,19 +5,23 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies (including devDependencies for TypeScript)
+# Install openssl so Prisma generate can run
+RUN apk add --no-cache openssl
+
+# Install dependencies (including devDependencies for TypeScript + prisma CLI)
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma/
 RUN npm ci
 
-# Copy source code
-COPY src ./src
+# Generate Prisma Client in builder stage (has full npm + openssl available)
+# binaryTargets in schema.prisma includes linux-musl-arm64-openssl-3.0.x
+# so the correct engine binary is downloaded here for the final image.
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost/dummy" npx prisma generate
 
-# Build TypeScript -> JavaScript (dist folder)
+# Copy source code and compile TypeScript -> dist/
+COPY src ./src
 RUN npm run build
-# Generate Prisma Client (so the artifacts exist)
-RUN npx prisma generate
 
 # ----------------------------
 # Stage 2: The Production Runner
@@ -28,16 +32,24 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy only package.json to install PROD dependencies
-COPY package*.json ./
-# Install ONLY production deps (saves space)
-RUN npm ci --only=production
+# Install openssl3 so Prisma's linux-musl-arm64-openssl-3.0.x engine can load
+RUN apk add --no-cache openssl
 
-# Copy built artifacts from Stage 1
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-# Copy the generated Prisma Client
+# Copy package.json and install production deps
+# prisma is kept as a prod dep so `prisma migrate deploy` works at startup
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci --omit=dev
+
+# Copy the generated Prisma Client (both @prisma types and .prisma native engine)
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy built TypeScript output
+COPY --from=builder /app/dist ./dist
+
+# Copy entrypoint script that runs migrations then starts the server
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Don't run as root (Security Best Practice)
 USER node
@@ -45,5 +57,6 @@ USER node
 # Expose the port Cloud Run expects
 EXPOSE 8080
 
-# Start the server
-CMD ["node", "dist/server.js"]
+# Run migrations then start server
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["node", "dist/src/server.js"]

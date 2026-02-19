@@ -1,7 +1,9 @@
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Include both native (dev) and Alpine/arm64 container binary targets
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
