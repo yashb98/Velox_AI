@@ -12,6 +12,8 @@ import playgroundRoutes from "./routes/playground";
 import billingRoutes from "./routes/billing";
 import agentRoutes from "./routes/agents";
 import conversationRoutes from "./routes/conversations";
+import adminRoutes from "./routes/admin";
+import { metricsRegistry } from "./services/metricsService";
 
 const app = express();
 
@@ -56,14 +58,25 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-// 7. Protected API routes — requireAuth validates Clerk JWT on every request
+// 7. Prometheus metrics — unauthenticated, intended for internal scraper only
+//    Post-MVP Item 2: expose velox_* counters/histograms/gauges for Grafana
+app.get("/metrics", async (_req: Request, res: Response) => {
+  res.set("Content-Type", metricsRegistry.contentType);
+  res.end(await metricsRegistry.metrics());
+});
+
+// 8. Protected API routes — requireAuth validates Clerk JWT on every request
 app.use("/api/documents", requireAuth, documentRoutes);
 app.use("/api/playground", requireAuth, playgroundRoutes);
 app.use("/api/billing", requireAuth, billingRoutes);
 app.use("/api/agents", requireAuth, agentRoutes);
 app.use("/api/conversations", requireAuth, conversationRoutes);
 
-// 8. Global error handler — catches anything thrown inside route handlers
+// 9. Admin routes — protected by ADMIN_API_KEY header (not Clerk)
+//    Post-MVP Item 6: used by Cloud Scheduler to trigger LLM eval runs
+app.use("/api/admin", adminRoutes);
+
+// 10. Global error handler — catches anything thrown inside route handlers
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err, reqId: req.id }, "Unhandled error");
   res.status(err.status || 500).json({

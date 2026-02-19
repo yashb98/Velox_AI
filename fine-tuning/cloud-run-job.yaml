@@ -1,0 +1,78 @@
+# fine-tuning/cloud-run-job.yaml
+#
+# Post-MVP Item 6 — Automated weekly fine-tuning pipeline.
+#
+# Cloud Run Jobs definition that runs in sequence:
+#   1. export_training_data.py  — exports completed calls from Postgres → JSONL
+#   2. train.py                 — LoRA/PEFT fine-tune Phi-3-mini on the JSONL
+#
+# Deploy:
+#   gcloud run jobs replace fine-tuning/cloud-run-job.yaml \
+#     --region europe-west2 --project PROJECT_ID
+#
+# Trigger manually:
+#   gcloud run jobs execute velox-finetune-job --region europe-west2
+#
+# Triggered automatically by Cloud Scheduler (see cron/finetune-scheduler.yaml).
+
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: velox-finetune-job
+  labels:
+    app: velox
+    component: finetune
+spec:
+  template:
+    spec:
+      containers:
+        - image: europe-west2-docker.pkg.dev/PROJECT_ID/velox-repo/velox-finetune:latest
+          command: ["bash", "-c"]
+          args:
+            - |
+              set -e
+
+              echo "=== Step 1: Export training data from production DB ==="
+              python export_training_data.py \
+                --output /tmp/calls.jsonl \
+                --min-turns 3
+
+              RECORD_COUNT=$(wc -l < /tmp/calls.jsonl)
+              echo "Exported ${RECORD_COUNT} training records"
+
+              if [ "${RECORD_COUNT}" -lt 50 ]; then
+                echo "Insufficient training data (${RECORD_COUNT} < 50 records) — skipping fine-tune"
+                exit 0
+              fi
+
+              echo "=== Step 2: Fine-tune Phi-3-mini with LoRA ==="
+              python train.py \
+                --model microsoft/Phi-3-mini-4k-instruct \
+                --dataset /tmp/calls.jsonl \
+                --output /tmp/phi3-velox \
+                --epochs 3
+
+              echo "=== Done ==="
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: velox-db-url
+                  key: latest
+            - name: MLFLOW_TRACKING_URI
+              valueFrom:
+                secretKeyRef:
+                  name: velox-mlflow-uri
+                  key: latest
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: velox-hf-token
+                  key: latest
+          resources:
+            limits:
+              cpu: "8"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+      maxRetries: 1
+      timeoutSeconds: 7200   # 2-hour hard cap

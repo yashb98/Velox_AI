@@ -7,6 +7,7 @@ import { TtsService } from "./ttsService";
 import { SessionService, CallStage } from "./sessionService";
 import { MetricsService } from "./metricsService";
 import { RetrievalService } from "./retrievalService";
+import { tracingService } from "./tracingService";
 import { PrismaClient } from "@prisma/client";
 import redis from "../config/redis";
 
@@ -61,8 +62,8 @@ export class CallOrchestrator {
 
   private setupPipeline() {
     this.transcriptionService = new TranscriptionService(
-      // 1. User finished speaking
-      async (text) => this.handleUserMessage(text),
+      // 1. User finished speaking — confidence forwarded for LangFuse STT span (Item 5)
+      async (text, confidence) => this.handleUserMessage(text, confidence),
       // 2. User interrupted (SpeechStarted event — fixed in 3.1)
       () => this.handleInterruption()
     );
@@ -70,7 +71,9 @@ export class CallOrchestrator {
 
   // ─── Core Logic Loop: Ear → Brain → Mouth ──────────────────────────────
 
-  private async handleUserMessage(userText: string) {
+  // Post-MVP Item 5 — confidence: Deepgram word-level confidence (0.0–1.0)
+  //   passed through from TranscriptionService for LangFuse STT span output.
+  private async handleUserMessage(userText: string, confidence = 0) {
     if (!this.isAlive) return;
 
     this.currentInteractionId++;
@@ -81,6 +84,22 @@ export class CallOrchestrator {
 
     // 3.3 — Transition to THINKING stage in Redis
     await SessionService.setStage(this.callSid, CallStage.THINKING);
+
+    // Post-MVP Item 5 — forward Deepgram confidence to LangFuse STT span
+    // The sttSpan.end() output is visible in the LangFuse "output" column
+    // for every STT stage, enabling quality monitoring per call.
+    const callTrace = tracingService.startTrace(
+      this.callSid,
+      this.agentId,
+      this.conversationId,
+      myId
+    );
+    const sttSpan = callTrace.sttSpan();
+    sttSpan.end({
+      transcript: userText,
+      confidence,
+      words: userText.split(" ").length,
+    });
 
     // 3.8 — Persist user message to DB (fire-and-forget; don't block pipeline)
     this.persistMessage("user", userText).catch((err) =>
