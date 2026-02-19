@@ -1,0 +1,38 @@
+# fine-tuning/cron/finetune-scheduler.yaml
+#
+# Post-MVP Item 6 — Cloud Scheduler job that triggers the weekly fine-tune.
+#
+# Runs every Monday at 03:00 Europe/London — 1 hour after the weekly LLM
+# quality eval (02:00) so eval results are captured before training starts.
+#
+# Deploy:
+#   gcloud scheduler jobs create http velox-weekly-finetune \
+#     --schedule="0 3 * * 1" \
+#     --time-zone="Europe/London" \
+#     --uri="https://run.googleapis.com/v1/namespaces/PROJECT_ID/jobs/velox-finetune-job:run" \
+#     --http-method=POST \
+#     --oauth-service-account-email=velox-cloud-run@PROJECT_ID.iam.gserviceaccount.com \
+#     --oauth-token-scope=https://www.googleapis.com/auth/cloud-platform \
+#     --attempt-deadline=2h \
+#     --max-retry-attempts=1 \
+#     --location=europe-west2 \
+#     --project=PROJECT_ID
+#
+# Or, if using Terraform / gcloud YAML apply, see the spec below.
+
+name: velox-weekly-finetune
+schedule: "0 3 * * 1"     # Monday 03:00 — 1 hr after weekly eval
+timeZone: Europe/London
+target:
+  type: run.googleapis.com/v1
+  uri: https://run.googleapis.com/v1/namespaces/PROJECT_ID/jobs/velox-finetune-job:run
+  httpMethod: POST
+  oidcToken:
+    serviceAccountEmail: velox-cloud-run@PROJECT_ID.iam.gserviceaccount.com
+    audience: https://run.googleapis.com/
+retryConfig:
+  retryCount: 1
+  maxDoublings: 0
+  minBackoffDuration: 5s
+  maxBackoffDuration: 5s
+attemptDeadline: 7200s    # match Job timeoutSeconds

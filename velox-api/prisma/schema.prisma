@@ -104,6 +104,9 @@ model Agent {
   tools_enabled Json @default("[]")
   llm_config    Json @default("{}")
 
+  // Active flag — disabled agents reject incoming calls without being deleted
+  is_active Boolean @default(true)
+
   // Soft delete
   deletedAt DateTime?
 

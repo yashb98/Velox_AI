@@ -1,7 +1,17 @@
+// src/services/transcriptionService.ts
+//
+// Post-MVP Item 5 — Forward Deepgram word-confidence scores to LangFuse.
+//
+// The `onTranscript` callback now receives a second argument `confidence`
+// (0.0–1.0) extracted from `data.channel.alternatives[0].confidence`.
+// Callers (orchestrator.ts) pass this into sttSpan.end({ transcript, confidence })
+// so the LangFuse dashboard surfaces STT quality per turn.
+
 import { createClient, LiveClient, LiveTranscriptionEvents } from "@deepgram/sdk";
 import { logger } from "../utils/logger";
 
-type TranscriptCallback = (text: string) => void;
+// Updated callback signature: confidence added as second argument
+type TranscriptCallback = (text: string, confidence: number) => void;
 type InterruptCallback = () => void;
 
 const MAX_RECONNECT_ATTEMPTS = 3;
@@ -60,12 +70,18 @@ export class TranscriptionService {
     });
 
     this.deepgramLive.on(LiveTranscriptionEvents.Transcript, (data) => {
-      const transcript = data.channel.alternatives[0].transcript;
+      const alt = data.channel.alternatives[0];
+      const transcript = alt.transcript;
+
+      // Post-MVP Item 5 — extract word-level confidence (0.0–1.0)
+      // Deepgram returns per-word confidence in `alt.confidence`
+      const confidence: number = alt.confidence ?? 0;
 
       // 'is_final' means the user paused long enough (300 ms endpointing)
       if (transcript && data.is_final) {
-        logger.info(`USER (Final): ${transcript}`);
-        this.onTranscript(transcript);
+        logger.info({ transcript, confidence }, "USER (Final)");
+        // Pass confidence to orchestrator so it reaches the LangFuse STT span
+        this.onTranscript(transcript, confidence);
       }
       // interim results are available here but we deliberately ignore them
       // (the SpeechStarted event already handles barge-in)

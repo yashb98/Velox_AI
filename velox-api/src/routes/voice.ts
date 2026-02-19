@@ -28,6 +28,7 @@ router.post("/incoming", validateTwilioWebhook, async (req, res) => {
     where: {
       phone_number: To,
       deletedAt: null,
+      is_active: true,   // 7 — reject calls to disabled agents
     },
     include: { org: true },
   });

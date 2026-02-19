@@ -3,7 +3,8 @@
 // 5.3 — GET /api/agents  (list all agents for the authenticated org)
 //       GET /api/agents/:agentId  (single agent detail)
 //       POST /api/agents  (create agent)
-//       PATCH /api/agents/:agentId  (update agent)
+//       PATCH /api/agents/:agentId  (update agent — includes is_active toggle)
+//       DELETE /api/agents/:agentId  (soft-delete agent)
 
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
@@ -29,6 +30,7 @@ router.get("/", async (req, res) => {
         tools_enabled: true,
         llm_config: true,
         kb_id: true,
+        is_active: true,
         created_at: true,
         updated_at: true,
       },
@@ -86,6 +88,7 @@ router.post("/", async (req, res) => {
         kb_id: kb_id ?? null,
         tools_enabled: tools_enabled ?? [],
         llm_config: llm_config ?? {},
+        is_active: true,
         org_id: orgId,
       },
     });
@@ -108,7 +111,7 @@ router.patch("/:agentId", async (req, res) => {
     });
     if (!existing) return res.status(404).json({ error: "Agent not found" });
 
-    const { name, system_prompt, voice_id, phone_number, kb_id, tools_enabled, llm_config } = req.body;
+    const { name, system_prompt, voice_id, phone_number, kb_id, tools_enabled, llm_config, is_active } = req.body;
 
     const updated = await prisma.agent.update({
       where: { id: req.params.agentId },
@@ -120,6 +123,7 @@ router.patch("/:agentId", async (req, res) => {
         ...(kb_id !== undefined && { kb_id }),
         ...(tools_enabled !== undefined && { tools_enabled }),
         ...(llm_config !== undefined && { llm_config }),
+        ...(is_active !== undefined && { is_active }),
       },
     });
 
@@ -127,6 +131,33 @@ router.patch("/:agentId", async (req, res) => {
   } catch (error: any) {
     logger.error({ error }, "PATCH /api/agents/:agentId failed");
     res.status(500).json({ error: "Failed to update agent" });
+  }
+});
+
+// ── DELETE /api/agents/:agentId ──────────────────────────────────────────────
+// Soft-delete: sets deletedAt and deactivates the agent.
+router.delete("/:agentId", async (req, res) => {
+  try {
+    const orgId = (req as any).auth?.orgId as string | undefined;
+    if (!orgId) return res.status(401).json({ error: "Organization ID missing from token" });
+
+    const existing = await prisma.agent.findFirst({
+      where: { id: req.params.agentId, org_id: orgId, deletedAt: null },
+    });
+    if (!existing) return res.status(404).json({ error: "Agent not found" });
+
+    await prisma.agent.update({
+      where: { id: req.params.agentId },
+      data: {
+        deletedAt: new Date(),
+        is_active: false,
+      },
+    });
+
+    res.status(204).send();
+  } catch (error: any) {
+    logger.error({ error }, "DELETE /api/agents/:agentId failed");
+    res.status(500).json({ error: "Failed to delete agent" });
   }
 });
 
