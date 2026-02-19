@@ -10,6 +10,8 @@ import webhookRoutes from "./routes/webhooks";
 import documentRoutes from "./routes/documentRoutes";
 import playgroundRoutes from "./routes/playground";
 import billingRoutes from "./routes/billing";
+import agentRoutes from "./routes/agents";
+import conversationRoutes from "./routes/conversations";
 
 const app = express();
 
@@ -58,6 +60,8 @@ app.get("/health", (_req: Request, res: Response) => {
 app.use("/api/documents", requireAuth, documentRoutes);
 app.use("/api/playground", requireAuth, playgroundRoutes);
 app.use("/api/billing", requireAuth, billingRoutes);
+app.use("/api/agents", requireAuth, agentRoutes);
+app.use("/api/conversations", requireAuth, conversationRoutes);
 
 // 8. Global error handler — catches anything thrown inside route handlers
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

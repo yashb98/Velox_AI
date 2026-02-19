@@ -94,7 +94,7 @@ export function EnterpriseEmptyState({ onTemplateSelect }: EnterpriseEmptyStateP
           }}
           className="grid md:grid-cols-2 gap-4"
         >
-          {templates.map((template, index) => (
+          {templates.map((template, _index) => (
             <motion.div
               key={template.id}
               variants={{

@@ -34,12 +34,10 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
   const [maxTokens, setMaxTokens] = useState(2048)
 
   // ✅ Calculations after hooks
-  const userMessages = messages.filter(m => m.role === 'user').length
-  const assistantMessages = messages.filter(m => m.role === 'assistant').length
   const toolCalls = messages.filter(m => m.role === 'tool').length
 
   // Event log (last 5 events)
-  const eventLog = messages.slice(-5).map((msg, idx) => ({
+  const eventLog = messages.slice(-5).map((msg, _idx) => ({
     time: msg.timestamp,
     event: msg.role === 'user' 
       ? 'User message received'
