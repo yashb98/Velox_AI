@@ -1,11 +1,55 @@
+# docker-compose.yml — Velox AI full local development stack
+#
+# Brings up every service needed to run the entire platform locally:
+#
+#   Infrastructure
+#     db        → PostgreSQL 15 + pgvector (port 5432)
+#     redis     → Redis 7 session cache    (port 6379)
+#     mlflow    → MLflow tracking server   (port 5000)  [profile: mlflow]
+#
+#   Application
+#     api       → Node.js / Express backend (port 8080)
+#     web       → React / Vite frontend     (port 5173)
+#
+#   AI Pipeline
+#     agents    → Python FastAPI + Google ADK (port 8000)
+#     slm       → Phi-3-mini GGUF sidecar     (port 8001) [profile: slm]
+#
+# ── Quick start ──────────────────────────────────────────────────────────────
+#   cp .env.example .env                  # fill in real API keys
+#   docker compose up --build             # core stack (no SLM, no MLflow)
+#
+# ── Optional profiles ────────────────────────────────────────────────────────
+#   --profile slm    → add Phi-3-mini GGUF sidecar (needs model file first)
+#   --profile mlflow → add MLflow experiment tracking UI
+#   --profile slm --profile mlflow → everything
+#
+# ── Run migrations after first start ────────────────────────────────────────
+#   docker compose exec api npx prisma migrate deploy
+#
+# ── Stripe webhooks (local dev) ──────────────────────────────────────────────
+#   stripe listen --forward-to http://localhost:8080/stripe/webhook
+
 version: '3.8'
 
+# ─── Shared network ────────────────────────────────────────────────────────────
+networks:
+  velox_net:
+    driver: bridge
+
+# ─── Persistent volumes ────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  mlflow_data:
+
+# ─── Services ──────────────────────────────────────────────────────────────────
 services:
-  # The Shared Database (Postgres 15 + Vector)
+
+  # ── PostgreSQL 15 + pgvector ──────────────────────────────────────────────────
   db:
     image: pgvector/pgvector:pg15
-    container_name: velox_db_local
-    restart: always
+    container_name: velox_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: devpass
@@ -14,52 +58,219 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d velox_local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - velox_net
 
-  # The Shared Cache
+  # ── Redis 7 ───────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: velox_redis_local
+    container_name: velox_redis
+    restart: unless-stopped
+    command: redis-server --save 20 1 --loglevel warning
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - velox_net
 
-  # ── ADK Agent Service (A1 — Google ADK multi-model pipeline) ────────────────
+  # ── MLflow tracking server ─────────────────────────────────────────────────────
+  # Optional — start with: docker compose --profile mlflow up
+  # UI: http://localhost:5000
+  # Set MLFLOW_TRACKING_URI=http://mlflow:5000 in the api service (already default)
+  mlflow:
+    profiles: ["mlflow"]
+    image: ghcr.io/mlflow/mlflow:v2.15.1
+    container_name: velox_mlflow
+    restart: unless-stopped
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri sqlite:///mlflow/mlflow.db
+        --default-artifact-root /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - velox_net
+
+  # ── Phi-3-mini GGUF SLM sidecar ───────────────────────────────────────────────
+  # Optional — start with: docker compose --profile slm up
+  # Requires model file: agents/slm/models/phi-3-mini-4k-instruct-q4.gguf
+  # Download: https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
+  # Routes ~70% of short voice turns locally, avoiding Gemini API calls.
+  slm:
+    profiles: ["slm"]
+    build:
+      context: ./agents/slm
+      dockerfile: Dockerfile
+    container_name: velox_slm
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./agents/slm/models:/app/models:ro
+    environment:
+      - MODEL_PATH=/app/models/phi-3-mini-4k-instruct-q4.gguf
+      - PORT=8001
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # GGUF model load takes 30-60 s
+    networks:
+      - velox_net
+
+  # ── Python ADK multi-agent pipeline ───────────────────────────────────────────
+  # Handles LLM routing: Phi-3 SLM → Gemini Flash → Gemini Pro
+  # Exposes POST /generate used by velox-api orchestrator.ts
   agents:
     build:
       context: ./agents
       dockerfile: Dockerfile
-    container_name: velox_agents_local
-    restart: always
+    container_name: velox_agents
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
+      - PORT=8000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
-      # Optional: point to Phi-3 SLM sidecar when running locally
-      - PHI3_SERVICE_URL=http://slm:8001/generate
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      # Points to SLM sidecar when that profile is active;
+      # the agents service gracefully falls back to Gemini Flash if unreachable.
+      - PHI3_SERVICE_URL=${PHI3_SERVICE_URL:-http://slm:8001/generate}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - velox_net
 
-  # ── Phi-3-mini SLM sidecar (A4) ─────────────────────────────────────────────
-  slm:
+  # ── Node.js / Express backend API ─────────────────────────────────────────────
+  # Handles: Twilio webhooks, WebSocket media stream, billing, RAG, agent CRUD
+  # Prometheus metrics: http://localhost:8080/metrics
+  # Health check:       http://localhost:8080/health
+  api:
     build:
-      context: ./agents/slm
+      context: ./velox-api
       dockerfile: Dockerfile
-    container_name: velox_slm_local
-    restart: always
+    container_name: velox_api
+    restart: unless-stopped
     ports:
-      - "8001:8001"
-    volumes:
-      # Mount the GGUF model file; download separately (see agents/slm/Dockerfile)
-      - ./agents/slm/models:/app/models:ro
+      - "8080:8080"
+    environment:
+      # ── Core ────────────────────────────────────────────────────────────────
+      - NODE_ENV=development
+      - PORT=8080
+      - DATABASE_URL=postgresql://postgres:devpass@db:5432/velox_local
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      # ── CORS ─────────────────────────────────────────────────────────────────
+      - DASHBOARD_URL=http://localhost:5173
+
+      # ── External APIs (required) ──────────────────────────────────────────────
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+
+      # ── Stripe ───────────────────────────────────────────────────────────────
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_STARTER_PRICE_ID=${STRIPE_STARTER_PRICE_ID:-}
+      - STRIPE_PRO_PRICE_ID=${STRIPE_PRO_PRICE_ID:-}
+      - STRIPE_ENTERPRISE_PRICE_ID=${STRIPE_ENTERPRISE_PRICE_ID:-}
+
+      # ── ADK Python pipeline ───────────────────────────────────────────────────
+      # Leave blank to fall back to the local inline LLMService
+      - ADK_SERVICE_URL=http://agents:8000
+
+      # ── Observability (optional — graceful no-op when blank) ──────────────────
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+
+      # ── Admin / eval endpoint ─────────────────────────────────────────────────
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-dev-admin-key-change-me}
+
+      # ── Tool integrations (all optional — degrade gracefully when absent) ──────
+      - ORDER_API_URL=${ORDER_API_URL:-}
+      - ORDER_API_KEY=${ORDER_API_KEY:-}
+      - INVENTORY_API_URL=${INVENTORY_API_URL:-}
+      - CALENDAR_API_URL=${CALENDAR_API_URL:-}
+      - CRM_API_URL=${CRM_API_URL:-}
+      - HANDOFF_API_URL=${HANDOFF_API_URL:-}
+      - FAQ_KB_ID=${FAQ_KB_ID:-}
+
+      # ── ElevenLabs TTS (optional — voices prefixed "el_" route here) ───────────
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      agents:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health | grep -q ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s   # Prisma init + TTS filler pre-warm
     networks:
       - velox_net
 
-networks:
-  velox_net:
-    driver: bridge
-
-volumes:
-  postgres_data:
+  # ── React / Vite frontend ─────────────────────────────────────────────────────
+  # Served by nginx on port 80 inside the container, exposed on host port 5173.
+  # Build-time args are baked into the static bundle (VITE_* vars).
+  web:
+    build:
+      context: ./velox-web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY}
+    container_name: velox_web
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ | grep -q html"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - velox_net
