@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Check, Loader2, TrendingUp, TrendingDown, CreditCard, DollarSign, Clock, Zap, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Link } from 'react-router-dom'
+import { useOrganization } from '@clerk/clerk-react'
 import api from '@/lib/api'
 
 // Animation variants
@@ -111,7 +112,9 @@ export default function Billing() {
   const [loading, setLoading] = useState(false)
   const [billingInfo, setBillingInfo] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
-  const orgId = 'test-org-id' // TODO: Get from auth context
+  // 5.6 — Replaced hardcoded 'test-org-id' with live Clerk org ID
+  const { organization } = useOrganization()
+  const orgId = organization?.id ?? ''
 
   useEffect(() => {
     loadBillingInfo()
@@ -137,8 +140,10 @@ export default function Billing() {
         cancelUrl: `${window.location.origin}/billing?canceled=true`,
       })
 
-      if (response.data.sessionId) {
-        window.location.href = `${import.meta.env.VITE_STRIPE_CHECKOUT_URL}?session_id=${response.data.sessionId}`
+      // Use the fully-formed Stripe Checkout URL returned by the backend.
+      // The backend returns session.url directly; no need for VITE_STRIPE_CHECKOUT_URL.
+      if (response.data.url) {
+        window.location.href = response.data.url
       }
     } catch (error: any) {
       console.error('Checkout failed:', error)

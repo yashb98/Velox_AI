@@ -1,49 +1,140 @@
+# cloudbuild.yaml
+#
+# 6.2 — Production-hardened CI/CD pipeline.
+#
+# Pipeline stages (in order):
+#   1.  npm ci          — clean install (reproducible)
+#   2.  npm run lint    — ESLint
+#   3.  npx tsc         — type check (must exit 0)
+#   4.  npm test        — unit tests
+#   5.  pip + DeepEval  — LLM quality gate (thresholds: relevancy≥0.85, faithfulness≥0.90)
+#   6.  Docker build    — tagged with commit SHA (immutable) + latest
+#   7.  Docker push     — to Artifact Registry
+#   8.  Cloud Run deploy — secrets from Secret Manager, NO plain-text env vars,
+#                          NO --allow-unauthenticated (requires IAM)
+#
+# Required Secret Manager secrets (must exist before first deploy):
+#   velox-db-url            DATABASE_URL
+#   velox-redis-host        REDIS_HOST
+#   velox-deepgram-key      DEEPGRAM_API_KEY
+#   velox-gemini-key        GEMINI_API_KEY
+#   velox-stripe-secret     STRIPE_SECRET_KEY
+#   velox-stripe-webhook    STRIPE_WEBHOOK_SECRET
+#   velox-clerk-secret      CLERK_SECRET_KEY
+#   velox-twilio-token      TWILIO_AUTH_TOKEN
+#   velox-openai-key        OPENAI_API_KEY  (used by DeepEval judge in CI)
+
 steps:
-  # 1. Install Dependencies & Build Typescript (Lint/Test check)
+  # ── 1. Install (clean, reproducible) ────────────────────────────────────────
   - name: 'node:20'
-    entrypoint: 'npm'
-    args: ['install']
+    id: 'install'
+    entrypoint: npm
+    args: ['ci']
     dir: 'velox-api'
-  
+
+  # ── 2. Lint ──────────────────────────────────────────────────────────────────
   - name: 'node:20'
-    entrypoint: 'npm'
-    args: ['run', 'build']
+    id: 'lint'
+    entrypoint: npm
+    args: ['run', 'lint']
     dir: 'velox-api'
+    waitFor: ['install']
 
-  # 2. Build the Docker Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'build',
-      '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:$COMMIT_SHA',
-      '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:latest',
-      '.'
-    ]
+  # ── 3. TypeScript type-check ─────────────────────────────────────────────────
+  - name: 'node:20'
+    id: 'typecheck'
+    entrypoint: npx
+    args: ['tsc', '--noEmit']
     dir: 'velox-api'
+    waitFor: ['install']
 
-  # 3. Push to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:latest']
+  # ── 4. Unit tests ─────────────────────────────────────────────────────────────
+  - name: 'node:20'
+    id: 'unit-tests'
+    entrypoint: npm
+    args: ['test', '--if-present']
+    dir: 'velox-api'
+    waitFor: ['install']
 
-  # 4. Deploy to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+  # ── 5. DeepEval LLM quality gate ─────────────────────────────────────────────
+  - name: 'python:3.11-slim'
+    id: 'llm-quality-gate'
+    entrypoint: bash
     args:
-      - 'run'
-      - 'deploy'
-      - 'velox-api-prod'
-      - '--image'
+      - '-c'
+      - |
+        pip install -q -r requirements-dev.txt &&
+        python -m pytest tests/llm/ -v --tb=short
+    dir: 'velox-api'
+    secretEnv: ['OPENAI_API_KEY']
+    waitFor: ['typecheck', 'unit-tests']
+
+  # ── 6. Docker build (tagged with immutable SHA) ───────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'docker-build'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:$COMMIT_SHA'
+      - '-t'
       - 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:latest'
-      - '--region'
-      - 'europe-west2'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated' # Allow public HTTP (for now, will lock down later)
-      - '--set-env-vars'
-      - 'NODE_ENV=production'
-      # We will map secrets later (DB URL, etc.)
-    
+      - '.'
+    dir: 'velox-api'
+    waitFor: ['llm-quality-gate']
+
+  # ── 7. Push both tags ────────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'docker-push-sha'
+    args:
+      - 'push'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:$COMMIT_SHA'
+    waitFor: ['docker-build']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'docker-push-latest'
+    args:
+      - 'push'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:latest'
+    waitFor: ['docker-build']
+
+  # ── 8. Cloud Run deploy — secrets from Secret Manager, no plain-text creds ───
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - velox-api-prod
+      - '--image=europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:$COMMIT_SHA'
+      - '--region=europe-west2'
+      - '--platform=managed'
+      # 6.2 — Removed --allow-unauthenticated; access controlled via IAM + Cloud Armor
+      - '--no-allow-unauthenticated'
+      # Secrets injected at runtime — never appear as plain text in build logs
+      - >-
+        --set-secrets=DATABASE_URL=velox-db-url:latest,
+        REDIS_HOST=velox-redis-host:latest,
+        DEEPGRAM_API_KEY=velox-deepgram-key:latest,
+        GEMINI_API_KEY=velox-gemini-key:latest,
+        STRIPE_SECRET_KEY=velox-stripe-secret:latest,
+        STRIPE_WEBHOOK_SECRET=velox-stripe-webhook:latest,
+        CLERK_SECRET_KEY=velox-clerk-secret:latest,
+        TWILIO_AUTH_TOKEN=velox-twilio-token:latest
+      # Only non-secret runtime config as plain env var
+      - '--set-env-vars=NODE_ENV=production'
+    waitFor: ['docker-push-sha', 'docker-push-latest']
+
+# ── Available secrets (pulled from Secret Manager at build time) ─────────────
+availableSecrets:
+  secretManager:
+    - versionName: 'projects/$PROJECT_ID/secrets/velox-openai-key/versions/latest'
+      env: 'OPENAI_API_KEY'
+
 options:
   logging: CLOUD_LOGGING_ONLY
+  # Faster builds: lint + typecheck + unit-tests run in parallel after install
+  substitutionOption: ALLOW_LOOSE
 
 images:
+  - 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:$COMMIT_SHA'
   - 'europe-west2-docker.pkg.dev/$PROJECT_ID/velox-repo/velox-api:latest'

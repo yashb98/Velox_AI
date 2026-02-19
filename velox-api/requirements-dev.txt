@@ -1,0 +1,8 @@
+# velox-api/requirements-dev.txt
+# Python dev dependencies for LLM quality gates (Day 6.1)
+#
+# Install: pip install -r requirements-dev.txt
+# Run tests: python -m pytest tests/llm/ -v
+
+deepeval>=0.21.0
+pytest>=7.4.0

@@ -22,5 +22,44 @@ services:
     ports:
       - "6379:6379"
 
+  # ── ADK Agent Service (A1 — Google ADK multi-model pipeline) ────────────────
+  agents:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: velox_agents_local
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      # Optional: point to Phi-3 SLM sidecar when running locally
+      - PHI3_SERVICE_URL=http://slm:8001/generate
+    depends_on:
+      - db
+      - redis
+    networks:
+      - velox_net
+
+  # ── Phi-3-mini SLM sidecar (A4) ─────────────────────────────────────────────
+  slm:
+    build:
+      context: ./agents/slm
+      dockerfile: Dockerfile
+    container_name: velox_slm_local
+    restart: always
+    ports:
+      - "8001:8001"
+    volumes:
+      # Mount the GGUF model file; download separately (see agents/slm/Dockerfile)
+      - ./agents/slm/models:/app/models:ro
+    networks:
+      - velox_net
+
+networks:
+  velox_net:
+    driver: bridge
+
 volumes:
   postgres_data:
