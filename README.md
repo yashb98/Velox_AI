@@ -1,814 +1,601 @@
-
 <div align="center">
+
+# 🎙️ Velox AI
 
 **Enterprise-Grade AI Voice Agent Platform**
 
-*Build, Deploy, and Manage Intelligent AI Agents for Voice and Chat Applications*
+*Build, deploy, and manage intelligent AI voice agents — no ML expertise required*
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
-[![React 19](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-7-646CFF.svg)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC.svg)](https://tailwindcss.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB.svg)](https://www.python.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748.svg)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791.svg)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D.svg)](https://redis.io/)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4.svg)](https://cloud.google.com/)
-[![Terraform](https://img.shields.io/badge/Terraform-7B42BC.svg)](https://www.terraform.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://docs.docker.com/compose/)
+[![Google Cloud](https://img.shields.io/badge/Google_Cloud-GCP-4285F4.svg)](https://cloud.google.com/)
 
 </div>
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Architecture](#architecture)
-- [Features](#features)
-- [Velox Web Frontend](#velox-web-frontend)
 - [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Infrastructure](#infrastructure)
+- [Prerequisites](#prerequisites)
+- [Getting Started (Local)](#getting-started-local)
+- [Environment Variables](#environment-variables)
+- [Running the Stack](#running-the-stack)
+- [Service URLs](#service-urls)
 - [API Reference](#api-reference)
-- [Development](#development)
-- [Deployment](#deployment)
+- [How Voice Calls Work](#how-voice-calls-work)
+- [AI Agent Pipeline](#ai-agent-pipeline)
+- [Fine-Tuning Pipeline](#fine-tuning-pipeline)
+- [Observability](#observability)
+- [Cloud Deployment](#cloud-deployment)
 - [Contributing](#contributing)
-- [License](#license)
 
 ---
 
-## 🎯 Overview
+## Overview
 
-Velox is a production-ready AI voice agent platform designed for enterprise applications. It enables organizations to create and manage intelligent AI agents capable of handling voice calls and text-based conversations with advanced capabilities including:
+Velox AI is a production-ready platform for building AI voice agents that can handle real phone calls. Connect a Twilio phone number, design a conversation flow, upload your knowledge base, and your AI agent answers calls — with sub-2-second response times powered by Gemini 2.5 Flash.
 
-- 🎙️ **Voice Interactions** - Integration with ElevenLabs and Deepgram for natural voice conversations
-- 💬 **Chat Support** - Text-based conversations with persistent context
-- 🛠️ **Tool Integration** - Extensible tool system for agents to perform actions (check orders, book tickets, etc.)
-- 📊 **Analytics Dashboard** - Monitor conversation costs, sentiment, and performance
-- 🔐 **Multi-Tenancy** - Secure organization-level isolation with role-based access control
-- 🎨 **Visual Flow Builder** - Intuitive drag-and-drop interface for designing AI agent conversation flows
+**Core capabilities:**
+- 🎙️ Real-time voice calls via Twilio + Deepgram STT + Deepgram/ElevenLabs TTS
+- 🧠 Multi-agent LLM routing (Phi-3 SLM → Gemini Flash → Gemini Pro)
+- 📚 Hybrid RAG (keyword + semantic search over your knowledge base)
+- 🛠️ Tool integrations (orders, inventory, calendar, CRM, human handoff)
+- 🎨 Visual flow builder — design conversation flows with drag-and-drop
+- 📊 Real-time analytics — cost tracking, sentiment, latency, Prometheus metrics
+- 🔐 Multi-tenant — org-level isolation, Clerk auth, Stripe billing
 
 ---
 
-## 🎨 Velox Web Frontend
-
-The Velox Web Frontend is a modern React 19 application built with Vite and TypeScript, featuring a visual flow builder for designing AI agent conversation flows.
-
-### Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| React 19 | UI framework |
-| Vite 7 | Build tool and dev server |
-| TypeScript 5.9 | Type safety |
-| Tailwind CSS 4 | Styling |
-| @xyflow/react | Flow-based diagram library |
-| React Router 7 | Client-side routing |
-| TanStack Query | Data fetching and caching |
-| Zustand | State management |
-| Axios | HTTP client |
-| Sonner | Toast notifications |
-| Radix UI | Accessible UI primitives |
-
-### Key Features
-
-#### Visual Flow Builder
-The flow builder provides a drag-and-drop interface for designing AI agent conversation flows with the following node types:
-
-| Node Type | Description | Properties |
-|-----------|-------------|------------|
-| **Start Node** (Green) | Entry point of the conversation | Label, Greeting message |
-| **Prompt Node** (Blue) | LLM prompt configuration | Label, System prompt, Temperature, Max tokens |
-| **Tool Node** (Orange) | Tool/action execution | Label, Tool name, Tool config (JSON) |
-| **Handoff Node** (Purple) | Transfer to human agent | Label, Target (phone/agent ID), Reason |
-| **Condition Node** (Yellow) | Branching logic | Label, Condition expression, True/False labels |
-| **End Node** (Red) | Conversation termination | Label, Farewell message |
-
-#### UI Components
-A comprehensive set of reusable UI components built with Radix UI and Tailwind CSS:
-
-- **Button** - Multiple variants (default, outline, secondary, ghost)
-- **Card** - Content containers with header, content, and title
-- **Input** - Text input fields
-- **Textarea** - Multi-line text input
-- **Label** - Form labels with Radix UI integration
-- **Select** - Dropdown select with search capability
-- **Badge** - Status indicators and labels
-
-### Project Structure
+## Architecture
 
 ```
-velox-web/
-├── src/
-│   ├── components/
-│   │   ├── flow/                  # Flow builder components
-│   │   │   ├── FlowEditor.tsx     # Main flow editor with React Flow
-│   │   │   ├── FlowToolbar.tsx    # Toolbar for adding nodes
-│   │   │   ├── NodePropertiesPanel.tsx  # Properties panel for selected node
-│   │   │   └── nodes/             # Custom node components
-│   │   │       ├── index.ts       # Node exports
-
-│   │   │       ├── PromptNode.tsx # Prompt node (blue)
-│   │   │       ├── ToolNode.tsx   # Tool node (orange)
-│   │   │       ├── HandoffNode.tsx # Handoff node (purple)
-│   │   │       ├── ConditionNode.tsx # Condition node (yellow)
-│   │   │       └── EndNode.tsx    # End node (red)
-│   │   │
-│   │   └── ui/                    # Reusable UI components
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── input.tsx
-│   │       ├── textarea.tsx
-│   │       ├── label.tsx
-│   │       ├── select.tsx
-│   │       └── badge.tsx
-│   │
-│   ├── pages/                     # Page components
-│   │   └── AgentFlowBuilder.tsx   # Agent flow builder page
-│   │
-│   ├── types/                     # TypeScript types
-│   │   └── flow.ts                # Flow-related type definitions
-│   │
-│   ├── lib/                       # Utilities
-│   │   ├── api.ts                 # Axios API client
-│   │   └── utils.ts               # Utility functions
-│   │
-│   ├── App.tsx                    # Main app component
-│   ├── main.tsx                   # Entry point
-│   └── index.css                  # Global styles
-│
-├── package.json
-├── tsconfig.json
-├── tsconfig.app.json
-├── tsconfig.node.json
-├── vite.config.ts
-└── tailwind.config.js
-```
-
-### Flow Data Structure
-
-```typescript
-interface AgentFlow {
-  nodes: Array<{
-    id: string
-    type: string
-    position: { x: number; y: number }
-    data: Record<string, unknown>
-  }>
-```
-    id: string
-    source: string
-    target: string
-    label?: string
-  }>
-}
-
-interface StartNodeData {
-  label: string
-  greeting?: string
-}
-
-interface PromptNodeData {
-  label: string
-  systemPrompt: string
-  temperature?: number
-  maxTokens?: number
-}
-
-interface ToolNodeData {
-  label: string
-  toolName: string
-  toolConfig: Record<string, unknown>
-}
-
-interface HandoffNodeData {
-  label: string
-  target: string
-  reason?: string
-}
-
-interface ConditionNodeData {
-  label: string
-  condition: string
-  trueLabel?: string
-  falseLabel?: string
-}
-
-interface EndNodeData {
-  label: string
-  farewell?: string
-}
-```
-
-### Getting Started
-
-```bash
-# Navigate to velox-web directory
-cd velox-web
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-### Environment Variables
-
-```env
-VITE_API_URL=http://localhost:3000
-```
-
-### API Integration
-
-The frontend uses an Axios-based API client with:
-
-- **Request interceptor** - Automatically adds JWT token from localStorage
-- **Response interceptor** - Handles 401 errors by redirecting to login
-- **Configurable base URL** - Via `VITE_API_URL` environment variable
-
-### Dependencies
-
-```json
-{
-  "@xyflow/react": "^12.10.0",
-  "@radix-ui/react-*": "^1.1.0",
-  "@tanstack/react-query": "^5.90.0",
-  "react-router-dom": "^7.13.0",
-  "zustand": "^5.0.10",
-  "axios": "^1.13.0",
-  "sonner": "^2.0.0",
-  "lucide-react": "^0.563.0"
-}
+┌──────────────────────────────────────────────────────────────────┐
+│                        Velox AI Stack                            │
+│                                                                  │
+│  Browser                                                         │
+│  ┌────────────┐   HTTP/WS    ┌─────────────────────────────────┐ │
+│  │ velox-web  │◄────────────►│         velox-api               │ │
+│  │ React/Vite │              │   Node.js · Express · Prisma    │ │
+│  │ :5173      │              │   WebSocket · Twilio Webhooks   │ │
+│  └────────────┘              │   :8080                         │ │
+│                              └──────────────┬──────────────────┘ │
+│  Phone                                      │                    │
+│  ┌────────────┐   WebSocket  │              │ HTTP               │
+│  │  Twilio    │◄─────────────┘    ┌─────────▼──────────┐        │
+│  │  (PSTN)    │                   │      agents        │        │
+│  └────────────┘                   │  Python · FastAPI  │        │
+│                                   │  Google ADK        │        │
+│  STT / TTS                        │  :8002             │        │
+│  ┌────────────┐                   └────────────────────┘        │
+│  │  Deepgram  │                                                  │
+│  │  ElevenLab │   Infrastructure                                 │
+│  └────────────┘   ┌──────────┐  ┌──────────┐  ┌─────────────┐  │
+│                   │ Postgres │  │  Redis   │  │   MLflow    │  │
+│                   │ :5433    │  │  :6380   │  │   :5001     │  │
+│                   └──────────┘  └──────────┘  └─────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🏗️ Architecture
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           Velox AI Platform                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────────┐ │
-│  │   Frontend  │◄──►│  velox-api  │◄──►│      Google Cloud           │ │
-│  │   (React)   │    │  (Node.js)  │    │                             │ │
-│  └─────────────┘    └─────────────┘    │  ┌───────────────────────┐  │ │
-│                                        │  │   Cloud SQL (Postgres) │  │ │
-│  ┌─────────────┐    ┌─────────────┐    │  └───────────────────────┘  │ │
-│  │   Twilio    │◄──►│  velox-api  │    │  ┌───────────────────────┐  │ │
-│  │   (Voice)   │    │  (Node.js)  │    │  │   Redis Cache         │  │ │
-│  └─────────────┘    └─────────────┘    │  └───────────────────────┘  │ │
-│                                        │  ┌───────────────────────┐  │ │
-│  ┌─────────────┐    ┌─────────────┐    │  │   AI Platform         │  │ │
-│  │ ElevenLabs/ │◄──►│  velox-api  │    │  │   (Gemini, etc.)      │  │ │
-│  │  Deepgram   │    │  (Node.js)  │    │  └───────────────────────┘  │ │
-│  └─────────────┘    └─────────────┘    │                             │ │
-│                                        └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Core Components
-
-1. **velox-api** - TypeScript/Express API server with Prisma ORM
-2. **Infrastructure** - Terraform configurations for Google Cloud Platform
-3. **Database** - PostgreSQL 15 with pgvector for vector storage
-4. **Cache** - Redis 7 for session management and caching
-
----
-
-## ✨ Features
-
-### Multi-Tenant Architecture
-- **Organizations** - Complete tenant isolation with unique API keys
-- **Users** - Role-based access control (ADMIN, EDITOR, VIEWER)
-- **Credit System** - Track usage and manage billing
-
-### AI Agent Management
-- **Custom System Prompts** - Configure agent personality and behavior
-- **Voice Integration** - Support for ElevenLabs and Deepgram voices
-- **Tool System** - Extensible tools for agent actions (check orders, stock lookup)
-- **LLM Configuration** - Adjust model parameters (temperature, model selection)
-
-### Execution Loop: "Thinking... Action... Speaking."
-- **Intent Detection** - Gemini configured with function calling to detect when tools are needed
-- **Tool Execution** - Seamless tool execution with result injection back to Gemini
-- **RAG Integration** - Knowledge base search before LLM response generation
-- **Real-time Pipeline** - Ear → Brain → Mouth flow with WebSocket audio streaming
-
-### Conversation Intelligence
-- **Real-time Monitoring** - Track active conversations
-- **Cost Tracking** - Accrue and monitor costs per conversation
-- **Sentiment Analysis** - Automatic sentiment scoring (-1.0 to 1.0)
-- **Audit Trail** - Complete message history with token usage
-
-### Developer Experience
-- **TypeScript** - Full type safety across the codebase
-- **Prisma ORM** - Type-safe database access
-- **Docker Support** - Containerized development environment
-- **Terraform IaC** - Infrastructure as Code for reproducible deployments
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 Velox_AI/
-├── README.md                      # This file
-├── docker-compose.yml             # Local development environment (PostgreSQL + Redis)
-├── cloudbuild.yaml                # Google Cloud Build CI/CD pipeline
+├── docker-compose.yml          # Full local stack (all 6 services)
+├── .env.example                # Environment variable template
+├── cloudbuild.yaml             # Google Cloud Build CI/CD
 │
-├── velox-api/                     # Main API application (TypeScript/Express)
-│   ├── package.json               # Node.js dependencies
-│   ├── tsconfig.json              # TypeScript configuration
-│   ├── Dockerfile                 # Multi-stage Docker build
-│   ├── prisma.config.ts           # Prisma configuration
-│   ├── simulate-twilio.js         # Twilio simulation script for local testing
-│   │
-│   ├── prisma/                    # Database layer
-│   │   ├── schema.prisma          # Database schema (Organizations, Users, Agents, Conversations, Messages)
-│   │   ├── seed.ts                # Database seeding script
-│   │   └── migrations/            # Database migrations
-│   │
-│   └── src/                       # Application source code
-│       ├── server.ts              # Application entry point + WebSocket server setup
-│       ├── app.ts                 # Express app configuration (middleware, health checks)
-│       │
-│       ├── config/
-│       │   └── redis.ts           # Redis client configuration
-│       │
-│       ├── middleware/
-│       │   ├── rateLimiter.ts     # Redis-based rate limiting middleware
-│       │   └── twilioAuth.ts      # Twilio webhook signature validation
-│       │
-│       ├── routes/
-│       │   └── voice.ts           # Twilio voice webhook + TwiML response
-│       │
-│       ├── services/
-│       │   ├── sessionService.ts  # Redis session state management (CallStage enum)
-│       │   └── transcriptionService.ts  # Deepgram transcription integration (Nova-2)
-│       │
-│       └── websocket/
-│           └── streamHandler.ts   # WebSocket handler for real-time audio streams
+├── velox-api/                  # Node.js / Express backend
+│   ├── src/
+│   │   ├── server.ts           # HTTP + WebSocket server, billing pre-auth gate
+│   │   ├── app.ts              # Express app, routes, /health, /metrics
+│   │   ├── routes/
+│   │   │   ├── agents.ts       # CRUD for AI agents
+│   │   │   ├── conversations.ts # Conversation history & messages
+│   │   │   ├── billing.ts      # Stripe checkout, webhooks, usage
+│   │   │   ├── documentRoutes.ts # Knowledge base upload & ingestion
+│   │   │   ├── playground.ts   # Playground chat endpoint
+│   │   │   ├── voice.ts        # Twilio voice webhook (TwiML)
+│   │   │   ├── webhooks.ts     # Stripe webhook handler
+│   │   │   └── admin.ts        # Admin eval endpoint (protected)
+│   │   └── services/
+│   │       ├── orchestrator.ts     # Call pipeline coordinator
+│   │       ├── llmService.ts       # Gemini integration + tool calling
+│   │       ├── transcriptionService.ts # Deepgram STT (Nova-2)
+│   │       ├── ttsService.ts       # Deepgram Aura + ElevenLabs TTS
+│   │       ├── ragService.ts       # RAG query pipeline
+│   │       ├── embeddingService.ts # Gemini text embeddings
+│   │       ├── hybridSearchService.ts # BM25 + vector hybrid search
+│   │       ├── ingestionService.ts # Document chunking & embedding
+│   │       ├── billingService.ts   # Credit check, usage metering
+│   │       ├── metricsService.ts   # Prometheus counters/histograms
+│   │       ├── tracingService.ts   # LangFuse observability
+│   │       ├── sessionService.ts   # Redis call state
+│   │       ├── mlflow.ts           # MLflow experiment logging
+│   │       └── promptService.ts    # System prompt builder
+│   │   └── tools/
+│   │       ├── definitions.ts      # Tool schemas (order, stock, calendar…)
+│   │       └── registry.ts         # Tool execution registry
+│   ├── prisma/
+│   │   ├── schema.prisma       # DB schema (orgs, agents, conversations…)
+│   │   └── migrations/         # 5 Prisma migrations
+│   ├── Dockerfile              # Multi-stage build (builder → runner)
+│   └── docker-entrypoint.sh   # Auto-runs DB migrations on startup
 │
-└── infrastructure/                # Terraform Infrastructure as Code (Google Cloud)
-    ├── .terraform.lock.hcl        # Terraform provider lock file
-    ├── main.tf                    # Main infrastructure definition (VPC, Cloud SQL, Redis)
-    ├── variables.tf               # Variable declarations
-    ├── provider.tf                # GCP provider configuration
-    ├── outputs.tf                 # Output values (database IP, Redis host)
-    └── terraform.tfstate          # Terraform state file
+├── velox-web/                  # React 19 / Vite frontend
+│   ├── src/
+│   │   ├── main.tsx            # Entry point + Clerk + error boundary
+│   │   ├── App.tsx             # Router (public + protected routes)
+│   │   └── pages/
+│   │       ├── HomePage.tsx    # Public landing page
+│   │       ├── Dashboard.tsx   # Metrics overview
+│   │       ├── Agents.tsx      # Agent list + create
+│   │       ├── AgentFlowBuilder.tsx # Visual drag-and-drop flow editor
+│   │       ├── Playground.tsx  # Test agent via chat
+│   │       ├── Calls.tsx       # Live & historical calls
+│   │       ├── Knowledge.tsx   # Knowledge base upload
+│   │       └── Billing.tsx     # Stripe subscription management
+│   └── Dockerfile              # Vite build → nginx:alpine
+│
+├── agents/                     # Python multi-agent pipeline
+│   ├── main.py                 # FastAPI server (POST /generate, GET /health)
+│   ├── pipeline.py             # Google ADK agent router
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── slm/                    # Phi-3-mini GGUF sidecar (optional)
+│       ├── slm_server.py
+│       └── Dockerfile
+│
+├── fine-tuning/                # Weekly fine-tune pipeline
+│   ├── export_training_data.py # Exports conversation data from DB
+│   ├── train.py                # Gemini fine-tune job
+│   ├── cloud-run-job.yaml      # Cloud Run Jobs definition
+│   └── cron/
+│       └── finetune-scheduler.yaml # Cloud Scheduler (Mon 03:00)
+│
+└── inftrastructure/            # Terraform — Google Cloud
+    ├── main.tf                 # VPC, Cloud SQL, Redis
+    ├── variables.tf
+    ├── provider.tf
+    └── outputs.tf
 ```
 
 ---
 
-## 🚀 Quick Start
+## Prerequisites
 
-### Prerequisites
+| Tool | Version | Install |
+|------|---------|---------|
+| Docker Desktop | 4.x+ | [docker.com](https://www.docker.com/products/docker-desktop/) |
+| Git | any | pre-installed on macOS |
+| VS Code | any | [code.visualstudio.com](https://code.visualstudio.com/) |
 
-- Docker & Docker Compose
-- Node.js 18+
-- Google Cloud CLI (for production deployment)
-- Terraform 1.0+
-
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-org/velox-ai.git
-   cd velox-ai
-   ```
-
-2. **Start the infrastructure**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp velox-api/.env.example velox-api/.env
-   # Edit .env with your configuration
-   ```
-
-4. **Initialize the database**
-   ```bash
-   cd velox-api
-   npx prisma migrate dev
-   npx prisma db seed
-   ```
-
-5. **Start the API server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Access the application**
-   - API: http://localhost:3000
-   - Database: localhost:5432
-   - Redis: localhost:6379
+> Node.js, Python, and all other dependencies run **inside Docker** — nothing to install locally.
 
 ---
 
-## ⚙️ Configuration
+## Getting Started (Local)
 
-### Environment Variables
+### Step 1 — Clone the repository
 
-Create a `.env` file in the `velox-api` directory:
+```bash
+git clone https://github.com/yashb98/Velox_AI.git
+cd Velox_AI
+```
+
+### Step 2 — Copy the environment file
+
+```bash
+cp .env.example .env
+```
+
+### Step 3 — Fill in your API keys
+
+Open `.env` in VS Code and add your credentials. The minimum required keys to get the app running:
+
+| Key | Where to get it |
+|-----|----------------|
+| `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| `DEEPGRAM_API_KEY` | [console.deepgram.com](https://console.deepgram.com) → API Keys |
+| `CLERK_SECRET_KEY` | [dashboard.clerk.com](https://dashboard.clerk.com) → API Keys |
+| `VITE_CLERK_PUBLISHABLE_KEY` | same Clerk dashboard |
+| `STRIPE_SECRET_KEY` | [dashboard.stripe.com](https://dashboard.stripe.com) → Developers → API Keys |
+| `STRIPE_WEBHOOK_SECRET` | Stripe → Webhooks → Signing secret |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | same Stripe dashboard |
+| `TWILIO_AUTH_TOKEN` | [console.twilio.com](https://console.twilio.com) → Account Info |
+
+> **Tip:** The frontend landing page works even without Clerk keys. Auth is only needed when accessing `/dashboard`, `/agents`, etc.
+
+### Step 4 — Start the full stack
+
+```bash
+docker compose --profile mlflow up --build
+```
+
+> First build takes ~3–5 minutes (downloads base images + installs dependencies). Subsequent starts are instant.
+
+### Step 5 — Open in browser
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| **Frontend** | http://localhost:5173 | Landing page + full dashboard |
+| **API Health** | http://localhost:8080/health | Should return `{"status":"ok"}` |
+| **API Metrics** | http://localhost:8080/metrics | Prometheus scrape endpoint |
+| **Agents Health** | http://localhost:8002/health | ADK pipeline status |
+| **MLflow UI** | http://localhost:5001 | Experiment tracking |
+
+---
+
+## Environment Variables
+
+Full reference for every variable in `.env`:
+
+### Required
 
 ```env
-# Database
-DATABASE_URL="postgresql://postgres:devpass@localhost:5432/velox_local"
+# Google Gemini — LLM + embeddings
+GEMINI_API_KEY=AIza...
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+# Deepgram — speech-to-text + text-to-speech
+DEEPGRAM_API_KEY=...
 
-# Application
-NODE_ENV="development"
-PORT=3000
+# Twilio — receives inbound phone calls
+TWILIO_AUTH_TOKEN=...
 
-# API Keys
-ELEVENLABS_API_KEY="your-elevenlabs-key"
-DEEPGRAM_API_KEY="your-deepgram-key"
-TWILIO_ACCOUNT_SID="your-twilio-sid"
-TWILIO_AUTH_TOKEN="your-twilio-token"
-GOOGLE_AI_API_KEY="your-google-ai-key"
+# Clerk — user authentication
+CLERK_SECRET_KEY=sk_test_...
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 
-# JWT
-JWT_SECRET="your-jwt-secret-key"
+# Stripe — billing & subscriptions
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_STARTER_PRICE_ID=price_...   # $49/mo — 1,000 minutes
+STRIPE_PRO_PRICE_ID=price_...       # $199/mo — 5,000 minutes
+STRIPE_ENTERPRISE_PRICE_ID=price_...# $499/mo — 20,000 minutes
 ```
 
-### Terraform Variables
+### Optional (gracefully disabled when absent)
 
-Configure `infrastructure/terraform.tfvars`:
+```env
+# ElevenLabs — premium TTS voices (prefix voice_id with "el_" to use)
+ELEVENLABS_API_KEY=
 
-```hcl
-project_id = "velox-ai-prod-2025"
-region     = "europe-west2"
+# LangFuse — LLM call tracing & observability
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_SECRET_KEY=
+
+# Tool integrations — connect to your business systems
+ORDER_API_URL=          # Order status lookup
+ORDER_API_KEY=
+INVENTORY_API_URL=      # Stock level checks
+CALENDAR_API_URL=       # Appointment booking
+CRM_API_URL=            # Customer profile lookup
+HANDOFF_API_URL=        # Transfer to human agent
+FAQ_KB_ID=              # Knowledge base UUID for FAQ RAG
+
+# Admin
+ADMIN_API_KEY=dev-admin-key-change-me   # Protects POST /api/admin/run-eval
 ```
 
----
+### Infrastructure (pre-wired by docker-compose — do not change for local dev)
 
-## ☁️ Infrastructure
-
-### Google Cloud Resources
-
-The infrastructure is provisioned using Terraform and includes:
-
-| Resource | Type | Description |
-|----------|------|-------------|
-| VPC Network | `google_compute_network` | Isolated network for all resources |
-| Cloud SQL | `google_sql_database_instance` | PostgreSQL 15 with private networking |
-| Redis | `google_redis_instance` | Managed Redis cache (5GB) |
-| Service Networking | `google_service_networking_connection` | Private service connectivity |
-
-### Deployment Steps
-
-1. **Initialize Terraform**
-   ```bash
-   cd infrastructure
-   terraform init
-   ```
-
-2. **Plan deployment**
-   ```bash
-   terraform plan -out=tfplan
-   ```
-
-3. **Apply changes**
-   ```bash
-   terraform apply tfplan
-   ```
-
-4. **Retrieve outputs**
-   ```bash
-   terraform output
-   ```
-
----
-
-## 📚 API Reference
-
-### Authentication
-
-All API requests require authentication via API key:
-
-```http
-Headers:
-  Authorization: Bearer <org_api_key>
-  X-API-Key: <org_api_key>
-```
-
-### Endpoints
-
-#### Organizations
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/organizations` | Create new organization |
-| GET | `/api/organizations/:id` | Get organization details |
-| PUT | `/api/organizations/:id` | Update organization |
-| DELETE | `/api/organizations/:id` | Delete organization |
-
-#### Users
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/users` | Create new user |
-| GET | `/api/users` | List organization users |
-| GET | `/api/users/:id` | Get user details |
-| PUT | `/api/users/:id` | Update user |
-| DELETE | `/api/users/:id` | Delete user |
-
-#### Agents
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/agents` | Create new agent |
-| GET | `/api/agents` | List organization agents |
-| GET | `/api/agents/:id` | Get agent details |
-| PUT | `/api/agents/:id` | Update agent |
-| DELETE | `/api/agents/:id` | Delete agent |
-
-#### Conversations
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/conversations` | List conversations |
-| GET | `/api/conversations/:id` | Get conversation details |
-| GET | `/api/conversations/:id/messages` | Get conversation messages |
-| PUT | `/api/conversations/:id` | Update conversation status |
-
----
-
-## 💻 Development
-
-### Database Schema
-
-The application uses a multi-tenant schema with the following models:
-
-```prisma
-model Organization {
-  id             String  @id @default(uuid())
-  name           String
-  slug           String  @unique
-  stripe_id      String?
-  credit_balance Int     @default(0)
-  api_key_hash   String  @unique
-  
-  users      User[]
-  agents     Agent[]
-  created_at DateTime @default(now())
-}
-
-model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
-  role     Role   @default(VIEWER)
-  org_id   String
-  
-  org Organization @relation(fields: [org_id], references: [id])
-}
-
-model Agent {
-  id            String @id @default(uuid())
-  name          String
-  system_prompt String
-  voice_id      String
-  tools_enabled Json   @default("[]")
-  llm_config    Json   @default("{}")
-  org_id        String
-  
-  org           Organization  @relation(fields: [org_id], references: [id])
-  conversations Conversation[]
-}
-
-model Conversation {
-  id             String             @id @default(uuid())
-  twilio_sid     String             @unique
-  status         ConversationStatus @default(ACTIVE)
-  cost_accrued   Float              @default(0.000)
-  sentiment_score Float?
-  agent_id       String
-  
-  agent    Agent      @relation(fields: [agent_id], references: [id])
-  messages Message[]
-}
-
-model Message {
-  id      String @id @default(uuid())
-  role    String
-  content String
-  tokens  Int    @default(0)
-  latency_ms Int  @default(0)
-  conversation_id String
-  
-  conversation Conversation @relation(fields: [conversation_id], references: [id])
-}
-```
-
-### Running Tests
-
-```bash
-cd velox-api
-npm test
-```
-
-### Database Migrations
-
-```bash
-# Create new migration
-npx prisma migrate dev --name <migration_name>
-
-# Apply migrations in production
-npx prisma migrate deploy
-
-# Reset database (development only)
-npx prisma migrate reset
+```env
+DATABASE_URL=postgresql://postgres:devpass@db:5432/velox_local
+REDIS_HOST=redis
+REDIS_PORT=6379
+MLFLOW_TRACKING_URI=http://mlflow:5000
+VITE_API_URL=http://localhost:8080
 ```
 
 ---
 
-## 🚢 Deployment
+## Running the Stack
 
-### Production Checklist
-
-- [ ] Set `NODE_ENV=production`
-- [ ] Configure production database credentials
-- [ ] Enable SSL/TLS
-- [ ] Set up monitoring and alerting
-- [ ] Configure backup and disaster recovery
-- [ ] Review and apply security hardening
-
-### Docker Production
-
+### Core stack (no MLflow UI)
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker compose up --build
 ```
 
-### Terraform Production
+### Core stack + MLflow experiment tracking UI
+```bash
+docker compose --profile mlflow up --build
+```
+
+### Core stack + Phi-3 SLM sidecar (requires model file — see below)
+```bash
+docker compose --profile slm up --build
+```
+
+### Everything
+```bash
+docker compose --profile mlflow --profile slm up --build
+```
+
+### Stop everything
+```bash
+docker compose --profile mlflow down
+```
+
+### Stop and wipe the database
+```bash
+docker compose --profile mlflow down -v
+```
+
+### Rebuild a single service after code changes
+```bash
+docker compose build api   # or: web, agents
+docker compose up -d api
+```
+
+### View logs for a service
+```bash
+docker logs velox_api -f
+docker logs velox_web -f
+docker logs velox_agents -f
+```
+
+---
+
+## Service URLs
+
+| Container | Host URL | Purpose |
+|-----------|----------|---------|
+| `velox_web` | http://localhost:5173 | React dashboard + landing page |
+| `velox_api` | http://localhost:8080/health | REST API health |
+| `velox_api` | http://localhost:8080/metrics | Prometheus metrics |
+| `velox_api` | http://localhost:8080/api/* | All API routes |
+| `velox_agents` | http://localhost:8002/health | ADK agent pipeline |
+| `velox_mlflow` | http://localhost:5001 | MLflow experiment UI |
+| `velox_db` | localhost:5433 | PostgreSQL (psql client) |
+| `velox_redis` | localhost:6380 | Redis (redis-cli) |
+
+> **Why non-standard ports?** Host ports are remapped to avoid conflicts with other local services (local Postgres on 5432, macOS AirPlay on 5000, etc.).
+
+---
+
+## API Reference
+
+All API routes are under `http://localhost:8080`.
+
+### Public
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/health` | Service health — returns `{"status":"ok"}` |
+| `GET` | `/metrics` | Prometheus metrics scrape |
+| `POST` | `/stripe/webhook` | Stripe billing events |
+| `POST` | `/voice/incoming` | Twilio inbound call webhook |
+| `POST` | `/voice/stream` | Twilio media stream websocket upgrade |
+
+### Protected (requires Clerk `Authorization: Bearer <token>` header)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/agents` | List all agents for the org |
+| `POST` | `/api/agents` | Create a new agent |
+| `GET` | `/api/agents/:id` | Get agent details |
+| `PUT` | `/api/agents/:id` | Update agent config |
+| `DELETE` | `/api/agents/:id` | Delete agent |
+| `GET` | `/api/conversations` | List conversations |
+| `GET` | `/api/conversations/:id` | Conversation details + messages |
+| `GET` | `/api/billing/subscription` | Current plan + usage |
+| `POST` | `/api/billing/checkout` | Create Stripe checkout session |
+| `POST` | `/api/documents/upload` | Upload knowledge base document |
+| `GET` | `/api/documents` | List knowledge base documents |
+| `POST` | `/api/playground/chat` | Test an agent (no phone needed) |
+
+### Admin (requires `X-Admin-Key: <ADMIN_API_KEY>` header)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/admin/run-eval` | Trigger DeepEval test suite + log to MLflow |
+
+---
+
+## How Voice Calls Work
+
+When someone calls your Twilio number:
+
+```
+1. Twilio → POST /voice/incoming
+      velox-api returns TwiML: <Connect><Stream url="wss://…/media-stream?orgId=…"/>
+
+2. Twilio → WebSocket upgrade to /media-stream
+      server.ts checks billing (hasMinutes) BEFORE accepting the WS handshake
+      → 402 Payment Required if out of credits
+
+3. Audio stream open
+      Deepgram STT transcribes each chunk in real time (Nova-2, confidence score logged)
+
+4. Transcript arrives
+      orchestrator.ts builds context (system prompt + RAG results + conversation history)
+      → sends to Google ADK agents pipeline (POST /generate)
+      → agents route to: Phi-3 SLM (simple) → Gemini Flash (medium) → Gemini Pro (complex)
+
+5. Tool call detected
+      Gemini returns functionCall → registry.ts executes the tool (order API, CRM, etc.)
+      → result injected back into Gemini → final natural language response
+
+6. Response → TTS
+      ttsService.ts calls Deepgram Aura (or ElevenLabs if voice_id starts with "el_")
+      → mulaw 8kHz audio streamed back to Twilio → caller hears the response
+
+7. Call ends
+      callService.ts writes final cost, sentiment score, duration to DB
+      metricsService.ts records Prometheus counters + histograms
+```
+
+### Setting up Twilio (for real phone calls)
+
+1. Buy a phone number in the [Twilio Console](https://console.twilio.com)
+2. Set the webhook URL for voice calls:
+   - **Voice → A Call Comes In:** `https://your-api-domain.com/voice/incoming`
+   - Or for local dev, use `ngrok` to expose port 8080:
+     ```bash
+     ngrok http 8080
+     # Then set: https://abc123.ngrok.io/voice/incoming
+     ```
+3. Add your `TWILIO_AUTH_TOKEN` to `.env`
+
+---
+
+## AI Agent Pipeline
+
+The multi-agent routing pipeline lives in `agents/` and is built with **Google ADK (Agent Development Kit)**.
+
+### How routing works
+
+```
+User speech
+     │
+     ▼
+Phi-3-mini SLM          ← fast, runs locally, handles ~70% of simple turns
+     │ (complex query?)
+     ▼
+Gemini Flash            ← cloud, handles most multi-turn conversations
+     │ (very complex?)
+     ▼
+Gemini Pro              ← highest capability, used for critical decisions
+```
+
+### Running with the Phi-3 SLM sidecar (optional)
+
+The SLM sidecar saves Gemini API costs by handling short/simple turns locally.
+
+1. Download the model:
+   ```bash
+   # ~2.3GB download
+   wget -P agents/slm/models/ \
+     https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf
+   ```
+2. Start with the SLM profile:
+   ```bash
+   docker compose --profile slm up --build
+   ```
+
+### Available tools
+
+Tools are defined in `velox-api/src/tools/definitions.ts` and registered in `registry.ts`:
+
+| Tool | Description | Requires |
+|------|-------------|----------|
+| `check_order_status` | Look up order by ID | `ORDER_API_URL` |
+| `check_item_stock` | Check warehouse stock | `INVENTORY_API_URL` |
+| `book_appointment` | Create a calendar event | `CALENDAR_API_URL` |
+| `get_customer_profile` | Fetch CRM record | `CRM_API_URL` |
+| `transfer_to_agent` | Hand off to human | `HANDOFF_API_URL` |
+| `search_knowledge_base` | RAG over uploaded docs | `FAQ_KB_ID` |
+
+---
+
+## Fine-Tuning Pipeline
+
+A weekly fine-tune job runs every Monday at 03:00 (Europe/London) on Google Cloud:
+
+```
+Cloud Scheduler → Cloud Run Job → export_training_data.py → train.py → Gemini fine-tune
+```
+
+To deploy:
+```bash
+# Deploy the Cloud Run Job
+gcloud run jobs replace fine-tuning/cloud-run-job.yaml
+
+# Deploy the scheduler
+gcloud scheduler jobs create http velox-finetune \
+  --schedule="0 3 * * 1" \
+  --location=europe-west2 \
+  --config=fine-tuning/cron/finetune-scheduler.yaml
+```
+
+---
+
+## Observability
+
+### Prometheus Metrics
+
+Scraped at `http://localhost:8080/metrics`:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `velox_calls_total` | Counter | Total calls by status (completed/failed) |
+| `velox_active_calls` | Gauge | Currently active WebSocket calls |
+| `velox_llm_latency_seconds` | Histogram | LLM response time by model |
+| `velox_tts_latency_seconds` | Histogram | TTS generation time by provider |
+| `velox_e2e_latency_seconds` | Histogram | End-to-end call turn latency |
+
+### MLflow Experiments
+
+Start MLflow UI with `--profile mlflow`, then visit http://localhost:5001:
+- Every call to `POST /api/admin/run-eval` logs a DeepEval test run
+- Fine-tune jobs log training metrics automatically
+
+### LangFuse Tracing
+
+Set `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` to trace every LLM call:
+- STT spans: transcript, confidence score, word count
+- LLM spans: prompt, response, model, latency
+- TTS spans: character count, provider, latency
+
+---
+
+## Cloud Deployment
+
+### Google Cloud (production)
+
+Infrastructure is managed with Terraform in `inftrastructure/`:
 
 ```bash
-cd infrastructure
-terraform workspace new prod
-terraform plan -var="environment=prod"
+cd inftrastructure
+
+# One-time setup
+terraform init
+
+# Preview changes
+terraform plan
+
+# Deploy (Cloud SQL Postgres + Redis + VPC + networking)
 terraform apply
 ```
 
----
+### CI/CD with Cloud Build
 
-## 🎯 Execution Loop: "Thinking... Action... Speaking."
+Push to `main` triggers `cloudbuild.yaml`:
+1. Build Docker images
+2. Push to Artifact Registry
+3. Deploy to Cloud Run (`velox-api`, `velox-web`, `agents`)
 
-The Velox AI voice agent follows a sophisticated execution loop designed for natural voice conversations. This loop orchestrates the interaction between the user, the AI brain (LLM), and tool execution, ensuring seamless conversation flow.
+### Environment variables in production
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                  EXECUTION LOOP: "Thinking... Action... Speaking."       │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐  │
-│  │   USER      │────►│      AI BRAIN    │────►│      SPEAKING       │  │
-│  │   SPEAKS    │     │   (Thinking)     │     │    (TTS Output)     │  │
-│  └─────────────┘     └──────────────────┘     └─────────────────────┘  │
-│        │                      │                        ▲                │
-│        │                      │                        │                │
-│        ▼                      ▼                        │                │
-│  ┌─────────────┐     ┌──────────────────┐              │                │
-│  │   SPEECH    │────►│   TOOL ACTION    │──────────────┘                │
-│  │  TO TEXT    │     │   (Database/API) │                              │
-│  └─────────────┘     └──────────────────┘                              │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### How It Works
-
-#### 1. Intent Detection & Tool Configuration
-
-Gemini is configured with function calling capability. When the user speaks, their audio is transcribed to text and sent to Gemini along with available tool definitions.
-
-```typescript
-// llmService.ts - Tool configuration
-config: {
-  systemInstruction: instructions,
-  tools: [{ functionDeclarations: tools }],
-}
-```
-
-#### 2. Tool Execution Loop
-
-When Gemini detects the need for a tool (e.g., checking order status or stock availability), it returns `functionCalls` instead of text. The system:
-
-1. **Detects tool intent** - `let functionCalls = response.functionCalls`
-2. **Executes the tool** - Calls the appropriate function from the tool registry
-3. **Injects the result** - Feeds the JSON result back to Gemini as `functionResponse`
-4. **Generates final response** - Gemini produces the natural language answer
-
-```typescript
-// Execute tool
-const apiResult = await functionToCall(args);
-
-// Feed result back to Gemini
-response = await client.models.generateContent({
-  model: this.modelName,
-  contents: [{
-    role: "tool",
-    parts: [{
-      functionResponse: {
-        name: toolName,
-        response: apiResult,
-      },
-    }],
-  }],
-});
-
-// Final output
-const finalText = response.text;
-```
-
-#### 3. Text-to-Speech Output
-
-The final response is converted to audio using Deepgram's Aura voice engine and streamed back to the user in mulaw 8000Hz format (Twilio compatible).
-
-### Implemented Features
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Tool Configuration | ✅ | Gemini configured with functionDeclarations |
-| Intent Detection | ✅ | functionCalls detection in LLMService |
-| Tool Execution Loop | ✅ | While loop handles sequential tool calls |
-| Result Injection | ✅ | functionResponse sent back to Gemini |
-| TTS Output | ✅ | Deepgram Aura voice at 8000Hz mulaw |
-
-### Available Tools
-
-Agents can invoke these tools during conversation:
-
-- **check_order_status** - Look up the current status of a customer's order using their Order ID
-- **check_item_stock** - Check if an item is available in the warehouse
-
-Each tool is registered in the tool registry and can be extended with additional functionality.
-
-### Processing Flow
-
-```
-User Audio → Deepgram STT → Gemini (with tools) → Tool Execution → Result Injection → Gemini Response → TTS → User
-```
-
-The entire pipeline is managed by the `CallOrchestrator` which handles:
-- WebSocket audio streaming
-- Real-time transcription
-- LLM response generation
-- TTS audio playback
-- Interruption handling (barge-in)
-- Metrics tracking
-
-
+Set via Cloud Run → Edit & Deploy → Variables, or Secret Manager (already referenced in `cloud-run-job.yaml`).
 
 ---
 
-## 📈 Monitoring
-
-### Key Metrics
-
-- **Conversation Costs** - Track cost_accrued per conversation
-- **Latency** - Monitor latency_ms for performance
-- **Sentiment** - Analyze sentiment_score trends
-- **Token Usage** - Monitor tokens per message
-
-### Health Checks
-
-```bash
-# API health
-curl http://localhost:3000/health
-
-# Database health
-curl http://localhost:3000/health/db
-
-# Redis health
-curl http://localhost:3000/health/redis
-```
-
----
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a branch: `git checkout -b feature/my-feature`
+3. Make changes and test locally with `docker compose up --build`
+4. Commit: `git commit -m "feat: add my feature"`
+5. Push and open a Pull Request against `main`
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE)
 
 ---
 
+<div align="center">
+Built with ❤️ using Gemini · Deepgram · Twilio · Google ADK
+</div>
