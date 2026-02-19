@@ -1,0 +1,122 @@
+[
+  {
+    "input": "What are your business hours?",
+    "expected_output": "We're open Monday to Friday, 9am to 5pm.",
+    "actual_output": "We're open Monday to Friday from 9am to 5pm. We're closed on weekends.",
+    "context": ["Business hours: Monday-Friday 9am-5pm, closed weekends and public holidays."]
+  },
+  {
+    "input": "How do I return a product?",
+    "expected_output": "You can return products within 30 days of purchase with a receipt.",
+    "actual_output": "To return a product, you have 30 days from the purchase date and you'll need your receipt.",
+    "context": ["Return policy: Items can be returned within 30 days of purchase. Original receipt required. Refunds processed within 5-7 business days."]
+  },
+  {
+    "input": "Do you offer free shipping?",
+    "expected_output": "Yes, free shipping is available on orders over $50.",
+    "actual_output": "Yes, we offer free standard shipping on all orders over $50.",
+    "context": ["Shipping policy: Free standard shipping on orders $50+. Express shipping available for $9.99. International shipping from $19.99."]
+  },
+  {
+    "input": "What payment methods do you accept?",
+    "expected_output": "We accept Visa, Mastercard, PayPal, and bank transfers.",
+    "actual_output": "We accept major credit cards including Visa and Mastercard, as well as PayPal and direct bank transfers.",
+    "context": ["Accepted payments: Visa, Mastercard, American Express, PayPal, bank transfer. No cash or cheques accepted."]
+  },
+  {
+    "input": "How long does delivery take?",
+    "expected_output": "Standard delivery takes 3-5 business days.",
+    "actual_output": "Standard delivery typically takes 3 to 5 business days after dispatch.",
+    "context": ["Delivery times: Standard 3-5 business days, Express 1-2 business days, Same-day available in select cities."]
+  },
+  {
+    "input": "Can I cancel my order?",
+    "expected_output": "Orders can be cancelled within 1 hour of placing them.",
+    "actual_output": "Yes, you can cancel your order within 1 hour of placing it through your account dashboard.",
+    "context": ["Order cancellation: Orders may be cancelled within 1 hour of purchase. After 1 hour orders enter fulfilment and cannot be cancelled. Contact support for exceptions."]
+  },
+  {
+    "input": "Is there a loyalty program?",
+    "expected_output": "Yes, we have a points-based loyalty program where you earn 1 point per dollar spent.",
+    "actual_output": "Yes, we offer a loyalty rewards program where you earn 1 point for every dollar you spend.",
+    "context": ["Loyalty program: Earn 1 point per $1 spent. 100 points = $5 reward. Points expire after 12 months of inactivity."]
+  },
+  {
+    "input": "How do I track my order?",
+    "expected_output": "You can track your order using the tracking number sent to your email.",
+    "actual_output": "Once your order ships, you'll receive a tracking number via email that you can use on our website.",
+    "context": ["Order tracking: Tracking number sent via email within 24h of dispatch. Track at website or carrier site. Allow 24h for tracking to activate."]
+  },
+  {
+    "input": "Do you have a warranty?",
+    "expected_output": "All products come with a 12-month manufacturer warranty.",
+    "actual_output": "Yes, all our products include a 12-month manufacturer warranty covering defects.",
+    "context": ["Warranty: 12-month manufacturer warranty on all products. Covers manufacturing defects. Does not cover accidental damage or normal wear."]
+  },
+  {
+    "input": "How do I contact customer support?",
+    "expected_output": "You can reach support by phone, email, or live chat during business hours.",
+    "actual_output": "You can contact our customer support team by phone, email, or live chat Monday through Friday during business hours.",
+    "context": ["Support channels: Phone (Mon-Fri 9am-5pm), Email (24h response), Live chat (Mon-Fri 9am-5pm). Weekend email support available."]
+  },
+  {
+    "input": "What is your privacy policy?",
+    "expected_output": "We do not sell your personal data to third parties.",
+    "actual_output": "We take your privacy seriously and never sell or share your personal data with third parties.",
+    "context": ["Privacy policy: We collect only necessary data. No data sold to third parties. Data retained for 2 years. GDPR compliant. You can request data deletion anytime."]
+  },
+  {
+    "input": "Can I change my delivery address?",
+    "expected_output": "You can change your delivery address within 30 minutes of placing the order.",
+    "actual_output": "Yes, you can update your delivery address within 30 minutes of placing your order by contacting us.",
+    "context": ["Address changes: Delivery address can be updated within 30 minutes of order placement. After that, order may have already entered processing. Contact support ASAP."]
+  },
+  {
+    "input": "Do you offer gift wrapping?",
+    "expected_output": "Yes, gift wrapping is available for $4.99 per item.",
+    "actual_output": "Yes, we offer gift wrapping as an add-on service for $4.99 per item.",
+    "context": ["Gift services: Gift wrapping available for $4.99 per item. Gift message included free. Gift receipt available on request."]
+  },
+  {
+    "input": "Are your products eco-friendly?",
+    "expected_output": "We use recycled packaging and source from sustainable suppliers.",
+    "actual_output": "Yes, we use recycled packaging materials and work with suppliers who follow sustainable practices.",
+    "context": ["Sustainability: 100% recycled packaging since 2022. Carbon-neutral shipping option. Suppliers audited for sustainability. B-Corp certified."]
+  },
+  {
+    "input": "Do you have a mobile app?",
+    "expected_output": "Yes, our app is available on iOS and Android.",
+    "actual_output": "Yes, we have a mobile app available for both iOS and Android devices.",
+    "context": ["Mobile app: Available on Apple App Store and Google Play. Features: order tracking, exclusive deals, loyalty points management. Rated 4.8 stars."]
+  },
+  {
+    "input": "What if my item arrives damaged?",
+    "expected_output": "Please contact support within 48 hours and we'll arrange a replacement.",
+    "actual_output": "If your item arrives damaged, please contact our support team within 48 hours and we'll send a replacement immediately.",
+    "context": ["Damaged items: Report within 48 hours of delivery with photos. Replacement shipped within 1-2 business days. No need to return damaged item for orders under $100."]
+  },
+  {
+    "input": "Can I place a bulk order?",
+    "expected_output": "Yes, we offer discounts for bulk orders over 50 units.",
+    "actual_output": "Yes, we do accept bulk orders and offer discounts for quantities over 50 units. Contact our sales team for a quote.",
+    "context": ["Bulk orders: Minimum 50 units. Discounts: 10% for 50-99, 20% for 100-499, 30% for 500+. Contact wholesale@company.com for quotes."]
+  },
+  {
+    "input": "Do you ship internationally?",
+    "expected_output": "Yes, we ship to over 30 countries worldwide.",
+    "actual_output": "Yes, we offer international shipping to more than 30 countries around the world.",
+    "context": ["International shipping: Available to 35+ countries. Rates from $19.99. Delivery 7-14 business days. Customs duties may apply and are buyer's responsibility."]
+  },
+  {
+    "input": "What is your refund policy?",
+    "expected_output": "Refunds are processed within 5-7 business days to your original payment method.",
+    "actual_output": "Once we receive your return, refunds are processed within 5 to 7 business days back to your original payment method.",
+    "context": ["Refund policy: Full refund within 30 days. Partial refund for opened items. Refund to original payment in 5-7 business days. Store credit option available."]
+  },
+  {
+    "input": "How do I create an account?",
+    "expected_output": "You can create an account on our website or mobile app using your email address.",
+    "actual_output": "Creating an account is easy — just visit our website or app and sign up with your email address.",
+    "context": ["Account creation: Sign up with email or Google/Apple SSO. Verify email within 24h. Account gives access to order history, loyalty points, and saved addresses."]
+  }
+]

@@ -1,0 +1,51 @@
+# velox-api/cron/weekly-eval.yaml
+#
+# 6.6 — Cloud Scheduler job: weekly DeepEval LLM regression cron.
+#
+# Triggers every Monday at 02:00 Europe/London to run the LLM quality gate
+# against the current production model and latest golden dataset.
+#
+# Deploy with:
+#   gcloud scheduler jobs create http velox-weekly-llm-eval \
+#     --schedule="0 2 * * 1" \
+#     --time-zone="Europe/London" \
+#     --uri="https://velox-api-prod-<hash>.run.app/api/admin/run-eval" \
+#     --http-method=POST \
+#     --oidc-service-account-email=velox-cloud-run@$PROJECT_ID.iam.gserviceaccount.com \
+#     --oidc-token-audience="https://velox-api-prod-<hash>.run.app" \
+#     --message-body='{"dataset":"golden","notify_slack":true}' \
+#     --headers="Content-Type=application/json" \
+#     --location=europe-west2 \
+#     --attempt-deadline=3600s
+#
+# The /api/admin/run-eval endpoint (to be implemented) should:
+#   1. Pull the latest golden_dataset.json from GCS or the repo
+#   2. Run deepeval evaluate() via a subprocess or Cloud Run Job
+#   3. Log results to MLflow (mlflowService.logQualityScores)
+#   4. POST a Slack message if any metric falls below threshold
+#   5. Return 200 on pass, 500 on fail (Cloud Scheduler will retry on 500)
+
+name: velox-weekly-llm-eval
+
+schedule: "0 2 * * 1"      # Every Monday at 02:00 UTC
+timeZone: Europe/London
+
+httpTarget:
+  uri: https://velox-api-prod-REPLACE_HASH.run.app/api/admin/run-eval
+  httpMethod: POST
+  body: eyJkYXRhc2V0IjoiZ29sZGVuIiwibm90aWZ5X3NsYWNrIjp0cnVlfQ==
+  # base64 of: {"dataset":"golden","notify_slack":true}
+  headers:
+    Content-Type: application/json
+
+  # OIDC token ensures only authorised callers can trigger the endpoint
+  oidcToken:
+    serviceAccountEmail: velox-cloud-run@PROJECT_ID.iam.gserviceaccount.com
+    audience: https://velox-api-prod-REPLACE_HASH.run.app
+
+retryConfig:
+  retryCount: 2
+  minBackoffDuration: 300s   # 5 min between retries
+  maxBackoffDuration: 3600s  # max 1 hour wait
+
+attemptDeadline: 3600s       # allow up to 1 hour for a full eval run

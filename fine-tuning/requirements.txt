@@ -1,0 +1,18 @@
+# fine-tuning/requirements.txt
+# GPU-capable Python environment for LoRA/PEFT fine-tuning of Phi-3-mini / Mistral-7B
+# on call transcript data collected from Velox AI production.
+#
+# Install: pip install -r requirements.txt
+# Requires: Python 3.11+, CUDA 12.1+, ~16 GB GPU VRAM for 8-bit quantised training
+
+transformers>=4.44.0
+peft>=0.12.0
+trl>=0.10.0
+bitsandbytes>=0.43.0
+datasets>=2.21.0
+accelerate>=0.33.0
+torch>=2.3.0
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+psycopg2-binary>=2.9.9
+mlflow>=2.15.0

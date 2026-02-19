@@ -1,0 +1,53 @@
+# .pre-commit-config.yaml
+#
+# 6.3 — Pre-commit hooks to prevent secrets from being committed and to
+#        enforce branch protection on main.
+#
+# Setup:
+#   pip install pre-commit detect-secrets
+#   pre-commit install          # installs hooks into .git/hooks/pre-commit
+#   detect-secrets scan > .secrets.baseline   # initialise baseline (run once)
+#
+# Update baseline after intentional additions:
+#   detect-secrets scan --baseline .secrets.baseline
+
+repos:
+  # ── Secret detection ────────────────────────────────────────────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock|
+            .*package-lock\.json|
+            velox-api/tests/llm/golden_dataset\.json
+          )$
+
+  # ── General hygiene ─────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Prevent direct commits to main/master
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master']
+
+      # Catch accidental large files (> 500 KB)
+      - id: check-added-large-files
+        args: ['--maxkb', '500']
+
+      # Ensure files end with a newline
+      - id: end-of-file-fixer
+        exclude: '\.tsbuildinfo$'
+
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        exclude: '\.md$'
+
+      # Validate JSON files
+      - id: check-json
+        exclude: 'tsconfig.*\.json$'
+
+      # Prevent merge conflict markers being committed
+      - id: check-merge-conflict

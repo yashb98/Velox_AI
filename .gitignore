@@ -2,19 +2,54 @@
 .terraform/
 *.tfstate
 *.tfstate.*
+*.tfvars
+*.tfvars.json
 
 # Dependencies
 node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 
 # Logs
 *.log
 
-# Environment
+# Environment & secrets
 .env
 .env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*
+*secrets*
+secrets/
+service-account*.json
+gcp-credentials*.json
+
+# detect-secrets baseline (contains hashed secret patterns — safe to commit,
+# but exclude from detect-secrets scan itself)
+# .secrets.baseline  ← intentionally NOT ignored so it is tracked in git
 
 # System
 .DS_Store
+Thumbs.db
 
 # Build outputs
 *.tsbuildinfo
+dist/
+build/
+
+# Python packaging
+*.egg-info/
+.eggs/
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+
+# Claude Code session files
+.claude/
