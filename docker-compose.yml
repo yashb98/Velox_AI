@@ -55,7 +55,7 @@ services:
       POSTGRES_PASSWORD: devpass
       POSTGRES_DB: velox_local
     ports:
-      - "5432:5432"
+      - "5433:5432"    # host 5433 → avoid conflict with local Postgres on 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -74,7 +74,7 @@ services:
     restart: unless-stopped
     command: redis-server --save 20 1 --loglevel warning
     ports:
-      - "6379:6379"
+      - "6380:6379"    # host 6380 → avoid conflict with existing redis on 6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -99,7 +99,7 @@ services:
         --backend-store-uri sqlite:///mlflow/mlflow.db
         --default-artifact-root /mlflow/artifacts
     ports:
-      - "5000:5000"
+      - "5001:5000"    # host 5001 → macOS AirPlay receiver uses 5000
     volumes:
       - mlflow_data:/mlflow
     healthcheck:
@@ -142,6 +142,7 @@ services:
   # ── Python ADK multi-agent pipeline ───────────────────────────────────────────
   # Handles LLM routing: Phi-3 SLM → Gemini Flash → Gemini Pro
   # Exposes POST /generate used by velox-api orchestrator.ts
+  # Host port 8002 avoids conflicts with other local services on 8000/8001
   agents:
     build:
       context: ./agents
@@ -149,7 +150,7 @@ services:
     container_name: velox_agents
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8002:8000"
     environment:
       - PORT=8000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -185,7 +186,7 @@ services:
       - "8080:8080"
     environment:
       # ── Core ────────────────────────────────────────────────────────────────
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=8080
       - DATABASE_URL=postgresql://postgres:devpass@db:5432/velox_local
       - REDIS_HOST=redis
