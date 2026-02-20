@@ -134,6 +134,41 @@ router.patch("/:agentId", async (req, res) => {
   }
 });
 
+// ── PUT /api/agents/:agentId ─────────────────────────────────────────────────
+// Full replace of llm_config (used by flow builder to persist flows)
+router.put("/:agentId", async (req, res) => {
+  try {
+    const orgId = (req as any).auth?.orgId as string | undefined;
+    if (!orgId) return res.status(401).json({ error: "Organization ID missing from token" });
+
+    const existing = await prisma.agent.findFirst({
+      where: { id: req.params.agentId, org_id: orgId, deletedAt: null },
+    });
+    if (!existing) return res.status(404).json({ error: "Agent not found" });
+
+    const { name, system_prompt, voice_id, phone_number, kb_id, tools_enabled, llm_config, is_active } = req.body;
+
+    const updated = await prisma.agent.update({
+      where: { id: req.params.agentId },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(system_prompt !== undefined && { system_prompt }),
+        ...(voice_id !== undefined && { voice_id }),
+        ...(phone_number !== undefined && { phone_number }),
+        ...(kb_id !== undefined && { kb_id }),
+        ...(tools_enabled !== undefined && { tools_enabled }),
+        ...(llm_config !== undefined && { llm_config }),
+        ...(is_active !== undefined && { is_active }),
+      },
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    logger.error({ error }, "PUT /api/agents/:agentId failed");
+    res.status(500).json({ error: "Failed to update agent" });
+  }
+});
+
 // ── DELETE /api/agents/:agentId ──────────────────────────────────────────────
 // Soft-delete: sets deletedAt and deactivates the agent.
 router.delete("/:agentId", async (req, res) => {

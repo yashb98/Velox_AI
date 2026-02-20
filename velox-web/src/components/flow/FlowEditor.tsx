@@ -22,9 +22,10 @@ import { AgentFlow } from '@/types/flow'
 interface FlowEditorProps {
   initialFlow?: AgentFlow
   onSave?: (flow: AgentFlow) => void
+  onChange?: (flow: AgentFlow) => void
 }
 
-export function FlowEditor({ initialFlow, onSave }: FlowEditorProps) {
+export function FlowEditor({ initialFlow, onSave, onChange }: FlowEditorProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialFlow?.nodes || [])
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialFlow?.edges || [])
   const [selectedNode, setSelectedNode] = useState<Node | null>(null)
@@ -60,12 +61,31 @@ export function FlowEditor({ initialFlow, onSave }: FlowEditorProps) {
   )
 
   const handleSave = useCallback(() => {
-    const flow: AgentFlow = { 
-      nodes: nodes as AgentFlow['nodes'], 
-      edges: edges as AgentFlow['edges'] 
+    const flow: AgentFlow = {
+      nodes: nodes as AgentFlow['nodes'],
+      edges: edges as AgentFlow['edges']
     }
     onSave?.(flow)
   }, [nodes, edges, onSave])
+
+  // Notify parent of changes so it can mark dirty / auto-save
+  const handleNodesChange = useCallback(
+    (changes: Parameters<typeof onNodesChange>[0]) => {
+      onNodesChange(changes)
+      const flow: AgentFlow = { nodes: nodes as AgentFlow['nodes'], edges: edges as AgentFlow['edges'] }
+      onChange?.(flow)
+    },
+    [onNodesChange, nodes, edges, onChange]
+  )
+
+  const handleEdgesChange = useCallback(
+    (changes: Parameters<typeof onEdgesChange>[0]) => {
+      onEdgesChange(changes)
+      const flow: AgentFlow = { nodes: nodes as AgentFlow['nodes'], edges: edges as AgentFlow['edges'] }
+      onChange?.(flow)
+    },
+    [onEdgesChange, nodes, edges, onChange]
+  )
 
   const updateNodeData = useCallback(
     (nodeId: string, data: any) => {
@@ -85,8 +105,8 @@ export function FlowEditor({ initialFlow, onSave }: FlowEditorProps) {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          onNodesChange={handleNodesChange}
+          onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
