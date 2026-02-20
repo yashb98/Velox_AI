@@ -142,6 +142,8 @@ export default function Agents() {
   const [editing, setEditing] = useState<Agent | null>(null)
   const [form, setForm] = useState<AgentForm>(DEFAULT_FORM)
   const [showTutorial, setShowTutorial] = useState(false)
+  // Track whether drawer has fully animated open so tutorial knows DOM is ready
+  const [drawerReady, setDrawerReady] = useState(false)
 
   // Fetch agents — backend returns { agents: Agent[], total: number }
   const { data: agents = [], isLoading, isError } = useQuery<Agent[]>({
@@ -185,6 +187,7 @@ export default function Agents() {
   function openCreate() {
     setEditing(null)
     setForm(DEFAULT_FORM)
+    setDrawerReady(false)
     setDrawerOpen(true)
   }
 
@@ -196,11 +199,13 @@ export default function Agents() {
       voice_id: agent.voice_id,
       system_prompt: agent.system_prompt,
     })
+    setDrawerReady(false)
     setDrawerOpen(true)
   }
 
   function closeDrawer() {
     setDrawerOpen(false)
+    setDrawerReady(false)
     setEditing(null)
     setForm(DEFAULT_FORM)
   }
@@ -224,6 +229,8 @@ export default function Agents() {
       <AnimatePresence>
         {showTutorial && (
           <AgentTutorial
+            drawerOpen={drawerOpen}
+            drawerReady={drawerReady}
             onComplete={() => {
               setShowTutorial(false)
               localStorage.setItem('agents_tutorial_done', 'true')
@@ -481,6 +488,7 @@ export default function Agents() {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                onAnimationComplete={() => setDrawerReady(true)}
                 className="relative w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col text-slate-100"
               >
                 {/* Drawer Header */}
