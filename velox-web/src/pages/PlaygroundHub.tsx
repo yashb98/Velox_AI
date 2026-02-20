@@ -1,6 +1,6 @@
 // src/pages/PlaygroundHub.tsx
 // Top-level Playground page accessible from the sidebar.
-// Shows an agent picker first, then launches the full chat interface.
+// Shows an agent picker first; also shows the demo agent card if one exists.
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -20,8 +20,10 @@ import {
   ChevronRight,
   X,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { loadDemoAgent, DEMO_AGENT_ID } from '@/lib/demoAgent'
 
 interface Agent {
   id: string
@@ -43,6 +45,9 @@ export default function PlaygroundHub() {
         .get<{ agents: Agent[]; total: number }>('/api/agents')
         .then((r) => r.data.agents ?? []),
   })
+
+  // Demo agent from localStorage
+  const demoAgent = loadDemoAgent()
 
   const filtered = agents.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
@@ -67,7 +72,7 @@ export default function PlaygroundHub() {
             </div>
           </div>
           <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">
-            {agents.length} agent{agents.length !== 1 ? 's' : ''}
+            {agents.length + (demoAgent ? 1 : 0)} agent{(agents.length + (demoAgent ? 1 : 0)) !== 1 ? 's' : ''}
           </Badge>
         </div>
       </motion.div>
@@ -91,6 +96,64 @@ export default function PlaygroundHub() {
             </button>
           )}
         </div>
+
+        {/* Demo agent card — always shown if it exists */}
+        {demoAgent && !search && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <p className="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Tutorial Demo Agent
+            </p>
+            <Link
+              to={`/agents/${DEMO_AGENT_ID}/playground`}
+              className="group block"
+            >
+              <div className="bg-amber-500/5 border border-amber-500/30 rounded-xl p-5 transition-all duration-200 hover:border-amber-500/60 hover:bg-amber-500/10 hover:shadow-lg hover:shadow-amber-900/10">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center ring-1 ring-amber-500/30 shrink-0">
+                      <Bot className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-sm leading-tight">{demoAgent.name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 italic">Demo — runs locally, no API needed</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs shrink-0">
+                    ● Demo
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                  {demoAgent.system_prompt}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <Mic2 className="h-3 w-3" />
+                    {demoAgent.voice_id}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-amber-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Zap className="h-3 w-3" />
+                    Test Demo
+                    <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        )}
+
+        {/* Divider */}
+        {demoAgent && agents.length > 0 && !search && (
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-slate-800" />
+            <span className="text-xs text-slate-600">Your Agents</span>
+            <div className="flex-1 h-px bg-slate-800" />
+          </div>
+        )}
 
         {/* Loading */}
         {isLoading && (
@@ -119,8 +182,8 @@ export default function PlaygroundHub() {
           </div>
         )}
 
-        {/* Empty state — no agents */}
-        {!isLoading && !isError && agents.length === 0 && (
+        {/* Empty state — no real agents and no demo agent */}
+        {!isLoading && !isError && agents.length === 0 && !demoAgent && (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -131,14 +194,22 @@ export default function PlaygroundHub() {
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">No agents yet</h2>
             <p className="text-sm text-slate-500 mb-5">
-              Create an agent first, then come back to test it here.
+              Create an agent first, or run the tutorial to create a demo agent.
             </p>
-            <Button asChild className="bg-blue-600 hover:bg-blue-500 text-white">
-              <Link to="/agents">
-                <Bot className="h-4 w-4 mr-2" />
-                Go to Agents
-              </Link>
-            </Button>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button asChild className="bg-blue-600 hover:bg-blue-500 text-white">
+                <Link to="/agents">
+                  <Bot className="h-4 w-4 mr-2" />
+                  Go to Agents
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10">
+                <Link to="/dashboard">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Start Tutorial
+                </Link>
+              </Button>
+            </div>
           </motion.div>
         )}
 
@@ -219,7 +290,7 @@ export default function PlaygroundHub() {
         </AnimatePresence>
 
         {/* Help footer */}
-        {!isLoading && agents.length > 0 && (
+        {!isLoading && (agents.length > 0 || demoAgent) && (
           <p className="text-xs text-slate-600 text-center mt-8">
             Click an agent card to open a live test conversation.
             Changes in the Playground do not affect live calls.

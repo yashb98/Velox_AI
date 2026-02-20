@@ -2,7 +2,7 @@
 // Routing config.
 // - WithLayout wraps protected pages in the collapsible AppLayout sidebar.
 // - Playground and Flow Builder (per-agent) remain full-screen (no sidebar).
-// - New top-level routes: /playground (PlaygroundHub) and /flow (FlowCanvas).
+// - Top-level routes: /playground (PlaygroundHub), /flow (FlowCanvas), /policy (CompanyPolicy).
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
@@ -12,6 +12,7 @@ import AgentFlowBuilder from './pages/AgentFlowBuilder'
 import Playground from './pages/Playground'
 import PlaygroundHub from './pages/PlaygroundHub'
 import FlowCanvas from './pages/FlowCanvas'
+import CompanyPolicy from './pages/CompanyPolicy'
 import Billing from './pages/Billing'
 import Dashboard from './pages/Dashboard'
 import Agents from './pages/Agents'
@@ -56,6 +57,7 @@ function App() {
         <Route path="/calls"      element={<WithLayout><Calls /></WithLayout>} />
         <Route path="/knowledge"  element={<WithLayout><Knowledge /></WithLayout>} />
         <Route path="/billing"    element={<WithLayout><Billing /></WithLayout>} />
+        <Route path="/policy"     element={<WithLayout><CompanyPolicy /></WithLayout>} />
 
         {/* Full-screen pages — no sidebar (need full canvas/screen space) */}
         <Route
