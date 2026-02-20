@@ -1,6 +1,5 @@
 // src/App.tsx
-// 5.4 — Added Clerk SignedIn/SignedOut guards on all protected routes.
-// 5.5 — Added routes for Dashboard, Agents, Calls, Knowledge pages.
+// Shared AppLayout (collapsible sidebar + Velox logo) wraps all protected pages.
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
@@ -13,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Agents from './pages/Agents'
 import Calls from './pages/Calls'
 import Knowledge from './pages/Knowledge'
+import AppLayout from './components/AppLayout'
 
 // Wrapper: redirects to Clerk sign-in if user is not authenticated
 function Protected({ children }: { children: React.ReactNode }) {
@@ -26,6 +26,15 @@ function Protected({ children }: { children: React.ReactNode }) {
   )
 }
 
+// Wrap with sidebar layout
+function WithLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Protected>
+      <AppLayout>{children}</AppLayout>
+    </Protected>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -34,23 +43,29 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/docs" element={<DocsPage />} />
 
-        {/* Protected dashboard routes */}
+        {/* Protected dashboard routes — all wrapped with AppLayout sidebar */}
         <Route
           path="/dashboard"
-          element={
-            <Protected>
-              <Dashboard />
-            </Protected>
-          }
+          element={<WithLayout><Dashboard /></WithLayout>}
         />
         <Route
           path="/agents"
-          element={
-            <Protected>
-              <Agents />
-            </Protected>
-          }
+          element={<WithLayout><Agents /></WithLayout>}
         />
+        <Route
+          path="/calls"
+          element={<WithLayout><Calls /></WithLayout>}
+        />
+        <Route
+          path="/knowledge"
+          element={<WithLayout><Knowledge /></WithLayout>}
+        />
+        <Route
+          path="/billing"
+          element={<WithLayout><Billing /></WithLayout>}
+        />
+
+        {/* Full-screen pages — no sidebar (need full canvas/screen space) */}
         <Route
           path="/agents/:agentId/flow"
           element={
@@ -64,30 +79,6 @@ function App() {
           element={
             <Protected>
               <Playground />
-            </Protected>
-          }
-        />
-        <Route
-          path="/calls"
-          element={
-            <Protected>
-              <Calls />
-            </Protected>
-          }
-        />
-        <Route
-          path="/knowledge"
-          element={
-            <Protected>
-              <Knowledge />
-            </Protected>
-          }
-        />
-        <Route
-          path="/billing"
-          element={
-            <Protected>
-              <Billing />
             </Protected>
           }
         />

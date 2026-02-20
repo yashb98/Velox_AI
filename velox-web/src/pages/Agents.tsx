@@ -20,7 +20,6 @@ import {
   Phone,
   Workflow,
   PlayCircle,
-  LayoutDashboard,
   Pencil,
   X,
   Loader2,
@@ -144,10 +143,13 @@ export default function Agents() {
   const [form, setForm] = useState<AgentForm>(DEFAULT_FORM)
   const [showTutorial, setShowTutorial] = useState(false)
 
-  // Fetch agents
-  const { data: agents = [], isLoading } = useQuery<Agent[]>({
+  // Fetch agents — backend returns { agents: Agent[], total: number }
+  const { data: agents = [], isLoading, isError } = useQuery<Agent[]>({
     queryKey: ['agents'],
-    queryFn: () => api.get<Agent[]>('/api/agents').then((r) => r.data),
+    queryFn: () =>
+      api
+        .get<{ agents: Agent[]; total: number }>('/api/agents')
+        .then((r) => r.data.agents ?? []),
   })
 
   // Create mutation
@@ -156,10 +158,13 @@ export default function Agents() {
       api.post<Agent>('/api/agents', body).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agents'] })
-      toast.success('Agent created successfully!')
+      toast.success('🎉 Agent created successfully!')
       closeDrawer()
     },
-    onError: () => toast.error('Failed to create agent'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error ?? 'Failed to create agent'
+      toast.error(msg)
+    },
   })
 
   // Update mutation
@@ -168,10 +173,13 @@ export default function Agents() {
       api.patch<Agent>(`/api/agents/${id}`, body).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agents'] })
-      toast.success('Agent updated')
+      toast.success('Agent updated successfully')
       closeDrawer()
     },
-    onError: () => toast.error('Failed to update agent'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error ?? 'Failed to update agent'
+      toast.error(msg)
+    },
   })
 
   function openCreate() {
@@ -247,13 +255,6 @@ export default function Agents() {
             </div>
             <div className="flex items-center gap-2">
               <AgentTutorialTrigger onClick={() => setShowTutorial(true)} />
-              <Button variant="ghost" size="sm" asChild
-                className="text-slate-300 hover:text-white hover:bg-slate-800">
-                <Link to="/dashboard">
-                  <LayoutDashboard className="h-4 w-4 mr-1" />
-                  Dashboard
-                </Link>
-              </Button>
               <Button
                 id="new-agent-btn"
                 size="sm"
@@ -273,6 +274,25 @@ export default function Agents() {
             <div className="flex items-center justify-center py-24 text-slate-500">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
               Loading agents…
+            </div>
+          )}
+
+          {/* ── Error state ──────────────────────────────────────────────────── */}
+          {isError && !isLoading && (
+            <div className="max-w-md mx-auto text-center py-16 space-y-3">
+              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+                <X className="h-6 w-6 text-red-400" />
+              </div>
+              <p className="text-white font-medium">Failed to load agents</p>
+              <p className="text-sm text-slate-500">Check your connection and API key, then try refreshing.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-700 text-slate-300 hover:text-white"
+                onClick={() => qc.invalidateQueries({ queryKey: ['agents'] })}
+              >
+                Retry
+              </Button>
             </div>
           )}
 
