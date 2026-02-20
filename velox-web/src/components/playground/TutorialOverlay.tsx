@@ -1,318 +1,343 @@
 // src/components/playground/TutorialOverlay.tsx
+// Rebuilt: dark-first design, better spotlight, cleaner step descriptions,
+// "What to do" action hints, and improved positioning logic.
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, Sparkles, Play } from 'lucide-react'
+
+// ── Step definitions ────────────────────────────────────────────────────────────
 
 interface TutorialStep {
   title: string
   description: string
+  action?: string   // "What to do next" call-to-action
   icon: string
-  target: string // ID of element to highlight
-  position: 'top' | 'bottom' | 'left' | 'right'
+  target: string
+  position: 'top' | 'bottom' | 'left' | 'right' | 'center'
 }
 
 const tutorialSteps: TutorialStep[] = [
   {
-    title: 'Welcome to the Playground! 🎮',
-    description: 'This is your safe space to test and refine your AI agent before deploying it to production. Let\'s take a quick tour!',
+    title: 'Welcome to the Playground 🎮',
+    description:
+      'This is your safe testing sandbox. Talk to your AI agent exactly as a caller would — without making a real phone call. Experiment freely; nothing here affects live traffic.',
+    action: 'Click Next to take a quick tour of each section.',
     icon: '👋',
     target: 'playground-header',
     position: 'bottom',
   },
   {
-    title: 'Agent Information 🤖',
-    description: 'This shows which agent you\'re testing. Each agent can have different personalities, tools, and capabilities.',
+    title: 'Which Agent Are You Testing?',
+    description:
+      'The badge in the top bar shows the active agent\'s name. Each agent has its own personality, voice, tools, and system prompt — so results may differ between agents.',
+    action: 'Switch agents from the Agents page to compare behaviours.',
     icon: '🏷️',
-    target: 'agent-badge',
-    position: 'bottom',
-  },
-  {
-    title: 'Quick Actions ⚡',
-    description: 'Export your conversations for analysis, or clear the chat to start fresh. Use keyboard shortcuts for faster workflow!',
-    icon: '🎯',
     target: 'action-buttons',
     position: 'bottom',
   },
   {
-    title: 'Chat Input Area ✍️',
-    description: 'Type your message here. Press Enter to send, or Shift+Enter for a new line. Try the suggested questions below!',
-    icon: '💬',
-    target: 'chat-input',
-    position: 'top',
+    title: 'Export & Clear',
+    description:
+      'Export saves the full conversation as a JSON file — useful for sharing test results or debugging. Clear resets the chat so you can start a fresh test scenario.',
+    action: 'Keyboard shortcuts: ⌘K to clear, ⌘E to export.',
+    icon: '⚡',
+    target: 'action-buttons',
+    position: 'bottom',
   },
   {
-    title: 'Message Suggestions 💡',
-    description: 'Click these example questions to quickly test your agent. They\'re designed to showcase different features.',
-    icon: '✨',
-    target: 'message-suggestions',
-    position: 'top',
-  },
-  {
-    title: 'Agent Configuration 📋',
-    description: 'View your agent\'s system prompt, enabled tools, and LLM settings. This helps you understand how your agent behaves.',
+    title: 'Inspector Panel — Your Control Centre',
+    description:
+      'The right panel shows everything about this session: model settings (temperature, max tokens), live metrics (latency, tokens used, cost), event log, and the agent\'s system prompt.',
+    action: 'Adjust Temperature and Max Tokens sliders to change behaviour.',
     icon: '⚙️',
     target: 'sidebar',
     position: 'left',
   },
   {
-    title: 'Live Statistics 📊',
-    description: 'Monitor conversation metrics in real-time: message counts, tool usage, and more. Perfect for analyzing agent performance.',
+    title: 'Live Metrics 📊',
+    description:
+      'Watch these numbers update in real-time as you chat. Latency shows how fast the AI responds. Token count and estimated cost help you understand usage before you go live.',
+    action: 'Send a message and watch the metrics update instantly.',
     icon: '📈',
     target: 'stats-card',
     position: 'left',
   },
   {
-    title: 'Ready to Test! 🚀',
-    description: 'Now you\'re ready to start testing! Try different scenarios, edge cases, and see how your agent responds. Happy testing!',
-    icon: '🎉',
+    title: 'Chat Area — Start a Conversation',
+    description:
+      'The central area shows the conversation thread. User messages appear on the right, assistant responses on the left. Tool calls (like database lookups) appear in purple.',
+    action: 'Click a template card below to fire off your first test message.',
+    icon: '💬',
     target: 'chat-area',
     position: 'top',
   },
+  {
+    title: 'Type Your Own Message ✍️',
+    description:
+      'Use the input at the bottom to type any message. Press Enter to send. Try edge cases, unusual questions, or role-play as a difficult customer to stress-test the agent.',
+    action: 'Press Shift+Enter to add a new line without sending.',
+    icon: '📝',
+    target: 'chat-input',
+    position: 'top',
+  },
+  {
+    title: 'You\'re Ready to Test! 🚀',
+    description:
+      'The Playground is your most powerful debugging tool. Use it to validate the system prompt, test tool integrations, and ensure the agent handles edge cases gracefully.',
+    action: 'Start with a template card, then try your own scenarios!',
+    icon: '🎉',
+    target: 'playground-header',
+    position: 'center',
+  },
 ]
+
+// ── Component ───────────────────────────────────────────────────────────────────
 
 interface TutorialOverlayProps {
   onComplete: () => void
   onSkip: () => void
 }
 
+const CARD_W = 420
+const CARD_H = 320
+const MARGIN = 20
+
 export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [show, setShow] = useState(true)
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
+  const [rect, setRect] = useState<DOMRect | null>(null)
 
   const step = tutorialSteps[currentStep]
 
-  useEffect(() => {
-    if (!show) return
-
-    // Calculate tooltip position based on target element
-    const targetElement = document.getElementById(step.target)
-    if (targetElement) {
-      const rect = targetElement.getBoundingClientRect()
-      let top = 0
-      let left = 0
-
-      switch (step.position) {
-        case 'bottom':
-          top = rect.bottom + 20
-          left = rect.left + rect.width / 2
-          break
-        case 'top':
-          top = rect.top - 20
-          left = rect.left + rect.width / 2
-          break
-        case 'left':
-          top = rect.top + rect.height / 2
-          left = rect.left - 20
-          break
-        case 'right':
-          top = rect.top + rect.height / 2
-          left = rect.right + 20
-          break
-      }
-
-      setTooltipPosition({ top, left })
-
-      // Scroll target into view
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }, [currentStep, show, step])
-
-  const handleNext = () => {
-    if (currentStep < tutorialSteps.length - 1) {
-      setCurrentStep(prev => prev + 1)
+  const measure = useCallback(() => {
+    const el = document.getElementById(step.target)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setTimeout(() => setRect(el.getBoundingClientRect()), 250)
     } else {
-      handleComplete()
+      setRect(null)
+    }
+  }, [step.target])
+
+  useEffect(() => {
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [measure])
+
+  const next = () => {
+    if (currentStep < tutorialSteps.length - 1) setCurrentStep((s) => s + 1)
+    else { onComplete() }
+  }
+
+  const prev = () => currentStep > 0 && setCurrentStep((s) => s - 1)
+
+  // ── Card position ─────────────────────────────────────────────────────────────
+  function cardStyle(): React.CSSProperties {
+    if (!rect || step.position === 'center') {
+      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+    }
+    const mx = rect.left + rect.width / 2
+    const my = rect.top + rect.height / 2
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    const clampX = (x: number) => Math.max(MARGIN, Math.min(x, vw - CARD_W - MARGIN))
+    const clampY = (y: number) => Math.max(MARGIN, Math.min(y, vh - CARD_H - MARGIN))
+
+    switch (step.position) {
+      case 'bottom':
+        return { top: clampY(rect.bottom + 24), left: clampX(mx - CARD_W / 2) }
+      case 'top':
+        return { top: clampY(rect.top - CARD_H - 24), left: clampX(mx - CARD_W / 2) }
+      case 'left':
+        return { top: clampY(my - CARD_H / 2), left: clampX(rect.left - CARD_W - 24) }
+      case 'right':
+        return { top: clampY(my - CARD_H / 2), left: clampX(rect.right + 24) }
     }
   }
-
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1)
-    }
-  }
-
-  const handleComplete = () => {
-    setShow(false)
-    onComplete()
-  }
-
-  const handleSkipTutorial = () => {
-    setShow(false)
-    onSkip()
-  }
-
-  if (!show) return null
-
-  // Get target element for spotlight
-  const targetElement = document.getElementById(step.target)
-  const targetRect = targetElement?.getBoundingClientRect()
 
   return (
     <AnimatePresence>
-      {show && (
-        <>
-          {/* Dark Backdrop with Spotlight Cutout */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 pointer-events-none"
-            style={{
-              background: targetRect
+      <>
+        {/* ── Dim backdrop ─────────────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 pointer-events-none"
+          style={{
+            background:
+              rect && step.position !== 'center'
                 ? `radial-gradient(
-                    circle at ${targetRect.left + targetRect.width / 2}px ${targetRect.top + targetRect.height / 2}px,
-                    transparent ${Math.max(targetRect.width, targetRect.height) / 2 + 10}px,
-                    rgba(0, 0, 0, 0.7) ${Math.max(targetRect.width, targetRect.height) / 2 + 50}px
+                    ellipse ${rect.width + 80}px ${rect.height + 60}px at
+                    ${rect.left + rect.width / 2}px ${rect.top + rect.height / 2}px,
+                    transparent 45%,
+                    rgba(2,6,23,0.85) 85%
                   )`
-                : 'rgba(0, 0, 0, 0.7)',
+                : 'rgba(2,6,23,0.85)',
+          }}
+        />
+
+        {/* ── Spotlight ring ───────────────────────────────────────────────────── */}
+        {rect && step.position !== 'center' && (
+          <motion.div
+            key={`ring-${currentStep}`}
+            initial={{ opacity: 0, scale: 0.93 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed z-50 pointer-events-none rounded-xl"
+            style={{
+              top: rect.top - 6,
+              left: rect.left - 6,
+              width: rect.width + 12,
+              height: rect.height + 12,
+              border: '2px solid #3b82f6',
+              boxShadow: '0 0 0 4px rgba(59,130,246,0.12), 0 0 28px rgba(59,130,246,0.45)',
             }}
           />
+        )}
 
-          {/* Highlight Border */}
-          {targetRect && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed z-50 pointer-events-none"
-              style={{
-                top: targetRect.top - 4,
-                left: targetRect.left - 4,
-                width: targetRect.width + 8,
-                height: targetRect.height + 8,
-                border: '3px solid rgb(59, 130, 246)',
-                borderRadius: '12px',
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
-              }}
-            />
-          )}
-
-          {/* Arrow Pointer */}
-          {targetRect && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="fixed z-50 pointer-events-none"
-              style={{
-                top:
-                  step.position === 'bottom'
-                    ? targetRect.bottom + 10
-                    : step.position === 'top'
-                    ? targetRect.top - 40
-                    : targetRect.top + targetRect.height / 2 - 15,
-                left:
-                  step.position === 'left'
-                    ? targetRect.left - 40
-                    : step.position === 'right'
-                    ? targetRect.right + 10
-                    : targetRect.left + targetRect.width / 2 - 15,
-              }}
-            >
-              <motion.div
-                animate={{
-                  y: step.position === 'bottom' ? [0, -10, 0] : step.position === 'top' ? [0, 10, 0] : 0,
-                  x: step.position === 'left' ? [0, 10, 0] : step.position === 'right' ? [0, -10, 0] : 0,
-                }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-4xl"
-              >
-                {step.position === 'bottom' && '⬆️'}
-                {step.position === 'top' && '⬇️'}
-                {step.position === 'left' && '➡️'}
-                {step.position === 'right' && '⬅️'}
-              </motion.div>
-            </motion.div>
-          )}
-
-          {/* Tutorial Card - Positioned near target */}
+        {/* ── Bouncing arrow ───────────────────────────────────────────────────── */}
+        {rect && step.position !== 'center' && (
           <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed z-[60] w-full max-w-md px-4 pointer-events-auto"
+            key={`arrow-${currentStep}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed z-50 pointer-events-none text-3xl select-none"
             style={{
               top:
                 step.position === 'bottom'
-                  ? Math.min(tooltipPosition.top + 50, window.innerHeight - 400)
+                  ? rect.bottom + 4
                   : step.position === 'top'
-                  ? Math.max(tooltipPosition.top - 350, 100)
-                  : tooltipPosition.top - 150,
-              left: Math.max(Math.min(tooltipPosition.left - 200, window.innerWidth - 450), 20),
-              transform: 'none',
+                  ? rect.top - 44
+                  : rect.top + rect.height / 2 - 16,
+              left:
+                step.position === 'left'
+                  ? rect.left - 46
+                  : step.position === 'right'
+                  ? rect.right + 8
+                  : rect.left + rect.width / 2 - 16,
             }}
           >
-            <Card className="border-2 border-primary shadow-2xl bg-white dark:bg-slate-900">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-5xl">{step.icon}</div>
+            <motion.span
+              animate={{
+                y: step.position === 'bottom' ? [0, -8, 0] : step.position === 'top' ? [0, 8, 0] : 0,
+                x: step.position === 'left' ? [0, 8, 0] : step.position === 'right' ? [0, -8, 0] : 0,
+              }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ display: 'block' }}
+            >
+              {step.position === 'bottom' && '⬆️'}
+              {step.position === 'top'    && '⬇️'}
+              {step.position === 'left'   && '➡️'}
+              {step.position === 'right'  && '⬅️'}
+            </motion.span>
+          </motion.div>
+        )}
+
+        {/* ── Tutorial card ─────────────────────────────────────────────────────── */}
+        <motion.div
+          key={`card-${currentStep}`}
+          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          className="fixed z-[60] pointer-events-auto"
+          style={{ width: CARD_W, ...cardStyle() }}
+        >
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+            {/* Gradient accent bar */}
+            <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500" />
+
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="text-4xl leading-none">{step.icon}</div>
+                <button
+                  onClick={onSkip}
+                  className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded"
+                  aria-label="Skip tutorial"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg font-semibold text-white mb-2 leading-snug">
+                {step.title}
+              </h3>
+
+              {/* Description */}
+              <p className="text-sm text-slate-400 leading-relaxed mb-3">
+                {step.description}
+              </p>
+
+              {/* Action hint */}
+              {step.action && (
+                <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 mb-4">
+                  <Play className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-blue-300 leading-relaxed">{step.action}</p>
+                </div>
+              )}
+
+              {/* Progress segments */}
+              <div className="flex gap-1 mb-4">
+                {tutorialSteps.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1 rounded-full transition-all duration-300 ${
+                      i === currentStep
+                        ? 'flex-[2] bg-blue-500'
+                        : i < currentStep
+                        ? 'flex-1 bg-blue-500/40'
+                        : 'flex-1 bg-slate-700'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  {currentStep + 1} of {tutorialSteps.length}
+                </span>
+                <div className="flex gap-2">
+                  {currentStep > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={prev}
+                      className="h-8 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                    >
+                      <ChevronLeft className="h-3 w-3 mr-1" />
+                      Back
+                    </Button>
+                  )}
                   <Button
-                    variant="ghost"
                     size="sm"
-                    onClick={handleSkipTutorial}
-                    className="h-8 w-8 p-0"
+                    onClick={next}
+                    className="h-8 bg-blue-600 hover:bg-blue-500 text-white"
                   >
-                    <X className="h-4 w-4" />
+                    {currentStep < tutorialSteps.length - 1 ? (
+                      <>
+                        Next
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        Start Testing!
+                        <Sparkles className="h-3 w-3 ml-1" />
+                      </>
+                    )}
                   </Button>
                 </div>
-
-                <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-slate-100">
-                  {step.title}
-                </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-6">{step.description}</p>
-
-                {/* Progress dots */}
-                <div className="flex items-center gap-2 mb-6">
-                  {tutorialSteps.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`h-2 rounded-full transition-all ${
-                        index === currentStep
-                          ? 'w-8 bg-primary'
-                          : index < currentStep
-                          ? 'w-2 bg-primary/50'
-                          : 'w-2 bg-slate-300 dark:bg-slate-700'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Step {currentStep + 1} of {tutorialSteps.length}
-                  </div>
-                  <div className="flex gap-2">
-                    {currentStep > 0 && (
-                      <Button variant="outline" onClick={handlePrevious}>
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        Back
-                      </Button>
-                    )}
-                    <Button onClick={handleNext}>
-                      {currentStep < tutorialSteps.length - 1 ? (
-                        <>
-                          Next
-                          <ChevronRight className="h-4 w-4 ml-1" />
-                        </>
-                      ) : (
-                        <>
-                          Start Testing
-                          <Sparkles className="h-4 w-4 ml-1" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </>
-      )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </>
     </AnimatePresence>
   )
 }
