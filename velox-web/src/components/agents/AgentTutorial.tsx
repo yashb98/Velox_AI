@@ -1,6 +1,11 @@
 // src/components/agents/AgentTutorial.tsx
 // Step-by-step guided tour for the Agents page.
 // Highlights each UI region with a spotlight, animated arrow, and descriptive tooltip card.
+//
+// TIMING FIX: Steps that target elements inside the right-side drawer now wait
+// for `drawerReady` (fired by onAnimationComplete on the drawer motion.div)
+// before they measure target element positions. This prevents the spotlight from
+// showing before the drawer is visible on screen.
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -31,6 +36,8 @@ interface AgentTutorialStep {
   target: string         // DOM element ID to spotlight
   position: 'top' | 'bottom' | 'left' | 'right' | 'center'
   accentColor: string    // tailwind bg colour token for the icon bubble
+  requiresDrawer?: boolean  // true = element lives inside the right-side drawer
+  requiresAgent?: boolean   // true = element only exists when ≥1 agent card is present
 }
 
 const STEPS: AgentTutorialStep[] = [
@@ -66,6 +73,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'field-name',
     position: 'right',
     accentColor: 'bg-violet-500/20',
+    requiresDrawer: true,
   },
   {
     id: 'phone-number',
@@ -77,6 +85,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'field-phone',
     position: 'right',
     accentColor: 'bg-emerald-500/20',
+    requiresDrawer: true,
   },
   {
     id: 'voice-id',
@@ -88,6 +97,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'field-voice',
     position: 'right',
     accentColor: 'bg-amber-500/20',
+    requiresDrawer: true,
   },
   {
     id: 'system-prompt',
@@ -99,6 +109,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'field-prompt',
     position: 'right',
     accentColor: 'bg-rose-500/20',
+    requiresDrawer: true,
   },
   {
     id: 'agent-card',
@@ -109,6 +120,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'agent-card-0',
     position: 'bottom',
     accentColor: 'bg-slate-500/20',
+    requiresAgent: true,
   },
   {
     id: 'flow-btn',
@@ -120,6 +132,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'agent-flow-btn-0',
     position: 'top',
     accentColor: 'bg-violet-500/20',
+    requiresAgent: true,
   },
   {
     id: 'test-btn',
@@ -131,6 +144,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'agent-test-btn-0',
     position: 'top',
     accentColor: 'bg-emerald-500/20',
+    requiresAgent: true,
   },
   {
     id: 'edit-btn',
@@ -141,6 +155,7 @@ const STEPS: AgentTutorialStep[] = [
     target: 'agent-edit-btn-0',
     position: 'top',
     accentColor: 'bg-amber-500/20',
+    requiresAgent: true,
   },
   {
     id: 'done',
@@ -160,31 +175,68 @@ const STEPS: AgentTutorialStep[] = [
 interface AgentTutorialProps {
   onComplete: () => void
   onSkip: () => void
+  /** Whether the right-side drawer is currently open */
+  drawerOpen?: boolean
+  /** True once the drawer's enter animation has fully completed */
+  drawerReady?: boolean
 }
 
-export function AgentTutorial({ onComplete, onSkip }: AgentTutorialProps) {
+export function AgentTutorial({
+  onComplete,
+  onSkip,
+  drawerOpen = false,
+  drawerReady = false,
+}: AgentTutorialProps) {
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
+  // Extra flag: are we waiting for the drawer to open before measuring?
+  const [waitingForDrawer, setWaitingForDrawer] = useState(false)
 
   const current = STEPS[step]
 
-  // Recalculate spotlight rect when step changes or window resizes
+  // ── Measure target element ──────────────────────────────────────────────────
   const measure = useCallback(() => {
     const el = document.getElementById(current.target)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      // Small delay to let scroll settle before measuring
-      setTimeout(() => setRect(el.getBoundingClientRect()), 300)
+      // Wait for scroll to settle, then measure. Use a longer delay for
+      // drawer-internal elements to ensure the spring animation has finished.
+      const delay = current.requiresDrawer ? 80 : 300
+      setTimeout(() => {
+        const updated = document.getElementById(current.target)
+        if (updated) setRect(updated.getBoundingClientRect())
+        else setRect(null)
+      }, delay)
     } else {
       setRect(null)
     }
-  }, [current.target])
+  }, [current.target, current.requiresDrawer])
 
+  // ── Re-measure on step change ───────────────────────────────────────────────
   useEffect(() => {
+    const needsDrawer = current.requiresDrawer
+
+    if (needsDrawer && !drawerReady) {
+      // The target is inside the drawer but the drawer hasn't opened yet.
+      // Mark that we're waiting; measurement will happen once drawerReady fires.
+      setWaitingForDrawer(true)
+      setRect(null)
+      return
+    }
+
+    setWaitingForDrawer(false)
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [measure])
+  }, [step, measure, current.requiresDrawer, drawerReady])
+
+  // ── Once drawerReady flips to true, trigger deferred measurement ────────────
+  useEffect(() => {
+    if (drawerReady && waitingForDrawer) {
+      setWaitingForDrawer(false)
+      measure()
+    }
+  }, [drawerReady, waitingForDrawer, measure])
 
   const next = () => {
     if (step < STEPS.length - 1) setStep((s) => s + 1)
@@ -236,10 +288,35 @@ export function AgentTutorial({ onComplete, onSkip }: AgentTutorialProps) {
 
   const Icon = current.icon
 
+  // While waiting for the drawer to animate in, show a "waiting" loader
+  // so the user knows something is coming.
+  if (waitingForDrawer) {
+    return (
+      <div className="fixed inset-0 z-50 pointer-events-none">
+        <div
+          className="fixed z-[60] pointer-events-auto"
+          style={{
+            bottom: 32,
+            right: 32,
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 shadow-xl flex items-center gap-3"
+          >
+            <div className="h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+            <span className="text-xs text-slate-300">Opening drawer…</span>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <AnimatePresence>
       <>
-        {/* ── Dim backdrop (click anywhere to skip) ───────────────────────────── */}
+        {/* ── Dim backdrop ────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -363,6 +440,15 @@ export function AgentTutorial({ onComplete, onSkip }: AgentTutorialProps) {
               <p className="text-sm text-slate-400 leading-relaxed mb-3">
                 {current.description}
               </p>
+
+              {/* Drawer-step notice */}
+              {current.requiresDrawer && !drawerOpen && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-xs text-amber-300">
+                    💡 Click <strong>New Agent</strong> to open the drawer and see this field highlighted.
+                  </p>
+                </div>
+              )}
 
               {/* Pro tip */}
               {current.hint && (
