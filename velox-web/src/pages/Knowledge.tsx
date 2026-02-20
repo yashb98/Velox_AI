@@ -86,19 +86,20 @@ export default function Knowledge() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b bg-background/95 backdrop-blur sticky top-0 z-10"
+        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">Knowledge Bases</h1>
+            <BookOpen className="h-6 w-6 text-blue-400" />
+            <h1 className="text-xl font-semibold text-white">Knowledge Bases</h1>
           </div>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild
+            className="text-slate-300 hover:text-white hover:bg-slate-800">
             <Link to="/dashboard">
               <LayoutDashboard className="h-4 w-4 mr-1" />
               Dashboard

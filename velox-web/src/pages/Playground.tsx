@@ -218,36 +218,36 @@ export default function Playground() {
         />
       )}
 
-      {/* Enterprise Layout - Unified Light Theme */}
-      <div className="h-screen flex flex-col bg-slate-50">
-        {/* Compressed Header */}
+      {/* Layout */}
+      <div className="h-screen flex flex-col bg-slate-950">
+        {/* Header */}
         <motion.header
           id="playground-header"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="h-14 border-b border-gray-200 bg-white px-6 flex items-center justify-between"
+          className="h-14 border-b border-slate-800 bg-slate-950/95 backdrop-blur px-6 flex items-center justify-between"
         >
           {/* Left: Navigation */}
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild className="h-8">
-              <Link to="/" className="gap-2 text-gray-600 hover:text-gray-900">
+            <Button variant="ghost" size="sm" asChild className="h-8 text-slate-300 hover:text-white hover:bg-slate-800">
+              <Link to="/" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="text-sm font-medium">Back</span>
               </Link>
             </Button>
 
-            <div className="h-4 w-px bg-gray-300" />
+            <div className="h-4 w-px bg-slate-700" />
 
             <div className="flex items-center gap-2">
-              <Play className="h-4 w-4 text-gray-400" />
-              <h1 className="text-sm font-semibold text-gray-900">Playground</h1>
+              <Play className="h-4 w-4 text-blue-400" />
+              <h1 className="text-sm font-semibold text-white">Playground</h1>
             </div>
           </div>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2" id="action-buttons">
             {agent && (
-              <Badge variant="outline" className="gap-1 font-normal">
+              <Badge variant="outline" className="gap-1 font-normal border-slate-700 text-slate-300">
                 <Zap className="h-3 w-3" />
                 {agent.name}
               </Badge>
@@ -258,7 +258,7 @@ export default function Playground() {
               size="sm"
               onClick={handleExportChat}
               disabled={messages.length === 0}
-              className="h-8 text-gray-600"
+              className="h-8 text-slate-300 hover:text-white hover:bg-slate-800"
             >
               <Download className="h-4 w-4 mr-1.5" />
               Export
@@ -269,7 +269,7 @@ export default function Playground() {
               size="sm"
               onClick={handleClearChat}
               disabled={messages.length === 0}
-              className="h-8 text-gray-600"
+              className="h-8 text-slate-300 hover:text-white hover:bg-slate-800"
             >
               <Trash2 className="h-4 w-4 mr-1.5" />
               Clear
@@ -278,7 +278,7 @@ export default function Playground() {
         </motion.header>
 
         {/* Main Workspace */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden bg-slate-950">
           {/* Central Canvas - White Sheet */}
           <div className="flex-1 flex flex-col relative">
             <div className="flex-1 overflow-y-auto px-6">

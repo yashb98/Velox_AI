@@ -121,36 +121,35 @@ export default function Dashboard() {
   const recent = conversations.slice(0, 10)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b bg-background/95 backdrop-blur sticky top-0 z-10"
+        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <LayoutDashboard className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">Dashboard</h1>
+            <LayoutDashboard className="h-6 w-6 text-blue-400" />
+            <h1 className="text-xl font-semibold text-white">Dashboard</h1>
           </div>
           <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/agents">Agents</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/calls">Calls</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/knowledge">Knowledge</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/billing">Billing</Link>
-            </Button>
+            {[
+              { to: '/agents', label: 'Agents' },
+              { to: '/calls', label: 'Calls' },
+              { to: '/knowledge', label: 'Knowledge' },
+              { to: '/billing', label: 'Billing' },
+            ].map(({ to, label }) => (
+              <Button key={to} variant="ghost" size="sm" asChild
+                className="text-slate-300 hover:text-white hover:bg-slate-800">
+                <Link to={to}>{label}</Link>
+              </Button>
+            ))}
           </nav>
         </div>
       </motion.header>
 
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="container mx-auto px-6 py-8 space-y-8 text-slate-100">
         {/* Stat Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

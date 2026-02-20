@@ -175,16 +175,17 @@ export default function Billing() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* Header with back button */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="border-b bg-background/95 backdrop-blur"
+        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur"
       >
         <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild
+            className="text-slate-300 hover:text-white hover:bg-slate-800">
             <Link to="/" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Home
@@ -202,10 +203,10 @@ export default function Billing() {
         >
           {/* Hero Section */}
           <motion.div variants={fadeInUp} className="text-center space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400 bg-clip-text text-transparent">
               Choose Your Plan
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
               Flexible pricing that scales with your business. Start free, upgrade anytime.
             </p>
           </motion.div>

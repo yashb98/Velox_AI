@@ -5,6 +5,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import HomePage from './pages/HomePage'
+import DocsPage from './pages/DocsPage'
 import AgentFlowBuilder from './pages/AgentFlowBuilder'
 import Playground from './pages/Playground'
 import Billing from './pages/Billing'
@@ -29,8 +30,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public landing page */}
+        {/* Public routes */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/docs" element={<DocsPage />} />
 
         {/* Protected dashboard routes */}
         <Route

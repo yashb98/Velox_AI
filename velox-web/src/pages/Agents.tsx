@@ -126,26 +126,28 @@ export default function Agents() {
   const isSaving = createMut.isPending || updateMut.isPending
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-950">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b bg-background/95 backdrop-blur sticky top-0 z-10"
+        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bot className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">Agents</h1>
+            <Bot className="h-6 w-6 text-blue-400" />
+            <h1 className="text-xl font-semibold text-white">Agents</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild
+              className="text-slate-300 hover:text-white hover:bg-slate-800">
               <Link to="/dashboard">
                 <LayoutDashboard className="h-4 w-4 mr-1" />
                 Dashboard
               </Link>
             </Button>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" onClick={openCreate}
+              className="bg-blue-600 hover:bg-blue-500 text-white">
               <Plus className="h-4 w-4 mr-1" />
               New Agent
             </Button>
@@ -258,7 +260,7 @@ export default function Agents() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="relative w-full max-w-md bg-background border-l shadow-xl flex flex-col"
+            className="relative w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-xl flex flex-col text-slate-100"
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-6 border-b">
