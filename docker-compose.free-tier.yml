@@ -1,0 +1,162 @@
+# docker-compose.free-tier.yml — Velox AI with external free-tier services
+#
+# Uses:
+#   - Neon (PostgreSQL) - External free tier
+#   - Upstash (Redis) - External free tier
+#   - Kimi API (LLM) - Your paid key
+#   - Deepgram (STT) - Free credits
+#   - No Clerk authentication (disabled)
+#
+# ── Quick start ──────────────────────────────────────────────────────────────
+#   1. Copy .env.free-tier to .env and fill in your API keys
+#   2. docker compose -f docker-compose.free-tier.yml up --build
+#
+# ── Services started ─────────────────────────────────────────────────────────
+#   - api       → Node.js backend (port 8080)
+#   - web       → React frontend (port 5173)
+#   - agents    → Python ADK pipeline (port 8002)
+#
+# ── Services NOT started (using external free tier) ──────────────────────────
+#   - db        → Using Neon PostgreSQL (external)
+#   - redis     → Using Upstash Redis (external)
+
+networks:
+  velox_net:
+    driver: bridge
+
+services:
+
+  # ── ADK Agent Service (Python) ─────────────────────────────────────────────
+  agents:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: velox_agents_free
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    environment:
+      - PORT=8000
+      # Kimi API (your paid key)
+      - KIMI_API_KEY=${KIMI_API_KEY}
+      - MOONSHOT_API_KEY=${KIMI_API_KEY}
+      - LLM_PROVIDER=kimi
+      # Optional: Gemini fallback
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - velox_net
+
+  # ── Node.js / Express backend API ──────────────────────────────────────────
+  api:
+    build:
+      context: ./velox-api
+      dockerfile: Dockerfile
+    container_name: velox_api_free
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # ── Core ─────────────────────────────────────────────────────────────
+      - NODE_ENV=development
+      - PORT=8080
+
+      # ── External Neon PostgreSQL (free tier) ─────────────────────────────
+      - DATABASE_URL=${DATABASE_URL}
+
+      # ── External Upstash Redis (free tier) ───────────────────────────────
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_HOST=${REDIS_HOST:-localhost}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+
+      # ── CORS ─────────────────────────────────────────────────────────────
+      - DASHBOARD_URL=http://localhost:5173
+
+      # ── LLM Provider ─────────────────────────────────────────────────────
+      - LLM_PROVIDER=${LLM_PROVIDER:-kimi}
+      - KIMI_API_KEY=${KIMI_API_KEY}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
+      - KIMI_MODEL=${KIMI_MODEL:-moonshot-v1-8k}
+
+      # ── Optional: Gemini fallback ────────────────────────────────────────
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+
+      # ── Auth (DISABLED for free tier) ────────────────────────────────────
+      - CLERK_ENABLED=false
+      - DEV_USER_ID=${DEV_USER_ID:-dev-user-001}
+      - DEV_ORG_ID=${DEV_ORG_ID:-dev-org-001}
+
+      # ── Speech Services ──────────────────────────────────────────────────
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+
+      # ── Twilio (optional) ────────────────────────────────────────────────
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+
+      # ── Stripe (free until transactions) ─────────────────────────────────
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+
+      # ── ADK Python pipeline ──────────────────────────────────────────────
+      - ADK_SERVICE_URL=http://agents:8000
+
+      # ── Observability (optional) ─────────────────────────────────────────
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+
+      # ── Admin ────────────────────────────────────────────────────────────
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-dev-admin-key-change-me}
+
+    depends_on:
+      agents:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health | grep -q ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - velox_net
+
+  # ── React / Vite frontend ──────────────────────────────────────────────────
+  web:
+    build:
+      context: ./velox-web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_AUTH_ENABLED: "false"
+        # Clerk disabled - no key needed
+        VITE_CLERK_PUBLISHABLE_KEY: ""
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+    container_name: velox_web_free
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+      - VITE_AGENTS_URL=http://localhost:8002
+      - VITE_AUTH_ENABLED=false
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ | grep -q html"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - velox_net

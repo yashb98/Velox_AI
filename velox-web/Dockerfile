@@ -72,6 +72,20 @@ server {
 }
 EOF
 
+# Create cache and pid directories with proper permissions
+RUN mkdir -p /var/cache/nginx/client_temp \
+             /var/cache/nginx/proxy_temp \
+             /var/cache/nginx/fastcgi_temp \
+             /var/cache/nginx/uwsgi_temp \
+             /var/cache/nginx/scgi_temp \
+             /var/run/nginx \
+    && chown -R nginx:nginx /var/cache/nginx \
+    && chown -R nginx:nginx /var/run/nginx \
+    && chown -R nginx:nginx /usr/share/nginx/html \
+    && touch /var/run/nginx/nginx.pid \
+    && chown nginx:nginx /var/run/nginx/nginx.pid \
+    && sed -i 's|pid.*|pid /var/run/nginx/nginx.pid;|' /etc/nginx/nginx.conf
+
 # Don't run as root (Security Best Practice)
 USER nginx
 

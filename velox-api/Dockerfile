@@ -12,7 +12,7 @@ RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Generate Prisma Client in builder stage (has full npm + openssl available)
 # binaryTargets in schema.prisma includes linux-musl-arm64-openssl-3.0.x
@@ -39,7 +39,7 @@ RUN apk add --no-cache openssl
 # prisma is kept as a prod dep so `prisma migrate deploy` works at startup
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --legacy-peer-deps
 
 # Copy the generated Prisma Client (both @prisma types and .prisma native engine)
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma

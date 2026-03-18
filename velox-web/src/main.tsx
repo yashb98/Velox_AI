@@ -7,6 +7,7 @@ import './index.css'
 import App from './App.tsx'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED !== 'false'
 
 // ── Top-level error boundary ──────────────────────────────────────────────────
 // Catches crashes from ClerkProvider (e.g. invalid publishable key in local dev)
@@ -78,20 +79,26 @@ const queryClient = new QueryClient({
   },
 })
 
+// Check if Clerk should be enabled
+const shouldUseClerk = AUTH_ENABLED && PUBLISHABLE_KEY && PUBLISHABLE_KEY.startsWith('pk_')
+
 // Use a dummy key when none is set so ClerkProvider doesn't throw
 // before the error boundary can catch it. Auth will still fail at
 // runtime but the landing page (public route) will render correctly.
-const clerkKey = PUBLISHABLE_KEY && PUBLISHABLE_KEY.startsWith('pk_')
+const clerkKey = shouldUseClerk
   ? PUBLISHABLE_KEY
   : 'pk_test_placeholder_key_that_wont_work'
 
-if (!PUBLISHABLE_KEY || !PUBLISHABLE_KEY.startsWith('pk_')) {
+if (!shouldUseClerk) {
   console.warn(
-    '[Velox] VITE_CLERK_PUBLISHABLE_KEY is missing or invalid — ' +
-    'authentication will not work. Public pages (landing, marketing) still render. ' +
-    'Get a valid key at https://dashboard.clerk.com'
+    '[Velox] Authentication is disabled or VITE_CLERK_PUBLISHABLE_KEY is missing — ' +
+    'running in dev mode without auth. All routes are accessible. ' +
+    'Set VITE_AUTH_ENABLED=true and provide a valid Clerk key for production.'
   )
 }
+
+// Export auth status for use in App.tsx
+export const isAuthEnabled = shouldUseClerk
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

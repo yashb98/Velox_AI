@@ -61,7 +61,11 @@ export class SemanticCache {
     if (!this.config.enabled) return null;
 
     try {
-      const queryEmbedding = await this.embeddingService.embed(query);
+      const queryEmbedding = await this.embeddingService.getEmbedding(query);
+      if (!queryEmbedding) {
+        this.misses++;
+        return null;
+      }
       const cacheKey = this.getCacheKey(agentId);
 
       // Get all cached entries for this agent
@@ -119,7 +123,11 @@ export class SemanticCache {
     if (!this.config.enabled) return;
 
     try {
-      const embedding = await this.embeddingService.embed(query);
+      const embedding = await this.embeddingService.getEmbedding(query);
+      if (!embedding) {
+        logger.warn({ query: query.slice(0, 50) }, 'Failed to generate embedding for cache');
+        return;
+      }
       const cacheKey = this.getCacheKey(agentId);
 
       const entry: CacheEntry = {
