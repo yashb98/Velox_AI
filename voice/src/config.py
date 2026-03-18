@@ -63,26 +63,31 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = ""
 
     # ─── LLM Providers ────────────────────────────────────────────────────────
-    llm_provider: str = "kimi"  # kimi | openai | gemini
+    llm_provider: str = "sglang"  # sglang | kimi | openai
 
-    # Kimi / Moonshot AI (OpenAI-compatible)
+    # SGLang (self-hosted on Modal) - primary for T1/T2
+    sglang_base_url: str = ""  # e.g. https://your-modal-app.modal.run/v1
+    sglang_api_key: str = ""
+    sglang_model_t0: str = "Qwen/Qwen2.5-3B-Instruct"       # Router
+    sglang_model_t1: str = "nvidia/Nemotron-3-Nano-4B-Instruct"  # Fast
+    sglang_model_t2: str = "Qwen/Qwen2.5-32B-Instruct"      # Medium
+
+    # Kimi / Moonshot AI (T3 fallback + alternative provider)
     kimi_api_key: str = ""
     kimi_base_url: str = "https://api.moonshot.cn/v1"
     kimi_model_fast: str = "moonshot-v1-8k"
-    kimi_model_powerful: str = "moonshot-v1-128k"
+    kimi_model_powerful: str = "kimi-k2.5"  # T3 Heavy
 
-    # OpenAI
+    # OpenAI (alternative fallback)
     openai_api_key: str = ""
     openai_model_fast: str = "gpt-4o-mini"
     openai_model_powerful: str = "gpt-4o"
 
-    # Gemini (fallback)
-    gemini_api_key: str = ""
-
     # ─── Model Routing Thresholds ─────────────────────────────────────────────
-    # Word count thresholds for tier selection (from pipeline.py)
-    tier_fast_max_words: int = 50    # < 50 words → fast tier
-    tier_slm_max_words: int = 15     # < 15 words → SLM tier (future: Nemotron Nano)
+    # Word count thresholds for tier selection
+    tier_t1_max_words: int = 15   # < 15 words → T1 Fast (Nemotron Nano)
+    tier_t2_max_words: int = 50   # < 50 words → T2 Medium (Qwen 32B)
+    # >= 50 words → T3 Heavy (Kimi K2.5)
 
     # ─── Billing Integration ──────────────────────────────────────────────────
     # Internal endpoint on Node.js API for billing deductions

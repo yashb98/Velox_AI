@@ -1,11 +1,12 @@
 // src/services/llmService.ts
 //
 // Multi-provider LLM service supporting:
+// - SGLang (self-hosted on Modal) - primary
 // - Kimi (Moonshot AI) - OpenAI-compatible API
-// - Gemini (Google) - Native SDK
 // - OpenAI - Native SDK
 //
 // Set LLM_PROVIDER env var to switch providers.
+// All providers use OpenAI-compatible API format.
 
 import { logger } from "../utils/logger";
 import { tools } from "../tools/definitions";
@@ -19,27 +20,28 @@ const FILLER_PHRASES = [
 ];
 
 // Provider configuration
-type LLMProvider = "kimi" | "gemini" | "openai";
+type LLMProvider = "sglang" | "kimi" | "openai";
 
 interface ProviderConfig {
   apiKey: string;
-  baseUrl?: string;
+  baseUrl: string;
   model: string;
 }
 
 const PROVIDER_CONFIGS: Record<LLMProvider, () => ProviderConfig> = {
+  sglang: () => ({
+    apiKey: process.env.SGLANG_API_KEY || "",
+    baseUrl: process.env.SGLANG_BASE_URL || "http://localhost:8000/v1",
+    model: process.env.SGLANG_MODEL_T1 || "nvidia/Nemotron-3-Nano-4B-Instruct",
+  }),
   kimi: () => ({
     apiKey: process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || "",
     baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.cn/v1",
     model: process.env.KIMI_MODEL || "moonshot-v1-8k",
   }),
-  gemini: () => ({
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "",
-    model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-  }),
   openai: () => ({
     apiKey: process.env.OPENAI_API_KEY || "",
-    baseUrl: process.env.OPENAI_BASE_URL,
+    baseUrl: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
     model: process.env.OPENAI_MODEL || "gpt-4o-mini",
   }),
 };
@@ -71,22 +73,22 @@ export class LLMService {
       return explicit;
     }
 
-    // Auto-detect based on available API keys
+    // Auto-detect based on available API keys / URLs
+    if (process.env.SGLANG_BASE_URL) {
+      return "sglang";
+    }
     if (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) {
       return "kimi";
-    }
-    if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
-      return "gemini";
     }
     if (process.env.OPENAI_API_KEY) {
       return "openai";
     }
 
-    // Default to gemini for backwards compatibility
-    return "gemini";
+    // Default to kimi for backwards compatibility
+    return "kimi";
   }
 
-  private async getOpenAICompatibleClient(): Promise<any> {
+  private async getClient(): Promise<any> {
     if (this.client) return this.client;
 
     // Dynamic import to avoid bundling issues
@@ -98,23 +100,9 @@ export class LLMService {
     });
 
     console.log("--------------------------------------------------");
-    console.log(`🛠️  LLM Service Initialized (${this.provider.toUpperCase()})`);
-    console.log(`🤖  Model: ${this.config.model}`);
-    console.log(`🔗  Base URL: ${this.config.baseUrl || "default"}`);
-    console.log("--------------------------------------------------");
-
-    return this.client;
-  }
-
-  private async getGeminiClient(): Promise<any> {
-    if (this.client) return this.client;
-
-    const { GoogleGenAI } = await import("@google/genai");
-    this.client = new GoogleGenAI({ apiKey: this.config.apiKey });
-
-    console.log("--------------------------------------------------");
-    console.log("🛠️  LLM Service Initialized (GEMINI)");
-    console.log(`🤖  Model: ${this.config.model}`);
+    console.log(`LLM Service Initialized (${this.provider.toUpperCase()})`);
+    console.log(`Model: ${this.config.model}`);
+    console.log(`Base URL: ${this.config.baseUrl}`);
     console.log("--------------------------------------------------");
 
     return this.client;
@@ -125,21 +113,18 @@ export class LLMService {
     onSentence: (text: string) => void,
     context: string = ""
   ) {
-    if (this.provider === "gemini") {
-      return this.generateWithGemini(input, onSentence, context);
-    } else {
-      return this.generateWithOpenAICompatible(input, onSentence, context);
-    }
+    // All providers use OpenAI-compatible API
+    return this.generateWithOpenAICompatible(input, onSentence, context);
   }
 
-  // OpenAI-compatible API (Kimi, OpenAI, etc.)
+  // OpenAI-compatible API (SGLang, Kimi, OpenAI)
   private async generateWithOpenAICompatible(
     input: string,
     onSentence: (text: string) => void,
     context: string = ""
   ) {
     try {
-      const client = await this.getOpenAICompatibleClient();
+      const client = await this.getClient();
 
       let systemContent = this.systemPrompt;
       if (context) {
@@ -176,7 +161,7 @@ export class LLMService {
         const functionName = toolCall.function.name;
         const functionArgs = JSON.parse(toolCall.function.arguments);
 
-        logger.info(`🤖 AI wants to execute: ${functionName}(${JSON.stringify(functionArgs)})`);
+        logger.info(`AI wants to execute: ${functionName}(${JSON.stringify(functionArgs)})`);
 
         // @ts-ignore
         const functionToCall = toolRegistry[functionName];
@@ -184,7 +169,7 @@ export class LLMService {
         if (functionToCall) {
           // Play filler phrase
           const randomFiller = FILLER_PHRASES[Math.floor(Math.random() * FILLER_PHRASES.length)];
-          logger.info(`🤖 AI (Filler): ${randomFiller}`);
+          logger.info(`AI (Filler): ${randomFiller}`);
           onSentence(randomFiller);
 
           // Execute tool
@@ -209,7 +194,7 @@ export class LLMService {
 
           assistantMessage = response.choices[0].message;
         } else {
-          logger.warn(`❌ Tool '${functionName}' not found.`);
+          logger.warn(`Tool '${functionName}' not found.`);
           break;
         }
       }
@@ -228,114 +213,13 @@ export class LLMService {
     }
   }
 
-  // Gemini-specific implementation (original code)
-  private async generateWithGemini(
-    input: string,
-    onSentence: (text: string) => void,
-    context: string = ""
-  ) {
-    try {
-      const ai = await this.getGeminiClient();
-
-      let instructions = this.systemPrompt;
-      if (context) {
-        instructions += `\n\n=== KNOWLEDGE BASE ===\n${context}\n======================`;
-      }
-
-      // Convert tools to correct format for @google/genai
-      const formattedTools = tools.map(tool => ({
-        type: 'function' as const,
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-      }));
-
-      let response = await ai.models.generateContent({
-        model: this.config.model,
-        contents: input,
-        config: {
-          systemInstruction: instructions,
-          tools: formattedTools,
-        },
-      });
-
-      // Tool Execution Loop
-      while (response.functionCalls && response.functionCalls.length > 0) {
-        const call = response.functionCalls[0];
-        const { name, args } = call;
-
-        logger.info(`🤖 AI wants to execute: ${name}(${JSON.stringify(args)})`);
-
-        // @ts-ignore
-        const functionToCall = toolRegistry[name];
-
-        if (functionToCall) {
-          // Play Filler Phrase
-          const randomFiller = FILLER_PHRASES[Math.floor(Math.random() * FILLER_PHRASES.length)];
-          logger.info(`🤖 AI (Filler): ${randomFiller}`);
-          onSentence(randomFiller);
-
-          // Execute Tool
-          const apiResult = await functionToCall(args);
-          logger.info(`Tool Result: ${JSON.stringify(apiResult)}`);
-
-          // Send function response back
-          response = await ai.models.generateContent({
-            model: this.config.model,
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: input }]
-              },
-              {
-                role: 'model',
-                parts: response.functionCalls.map((fc: any) => ({
-                  functionCall: fc
-                }))
-              },
-              {
-                role: 'function',
-                parts: [{
-                  functionResponse: {
-                    name: name,
-                    response: apiResult,
-                  }
-                }]
-              }
-            ],
-            config: {
-              systemInstruction: instructions,
-              tools: formattedTools,
-            },
-          });
-
-        } else {
-          logger.warn(`❌ Tool '${name}' not found.`);
-          break;
-        }
-      }
-
-      // Extract final text response
-      const text = response.text;
-      if (text) {
-        this.processBuffer(text, onSentence);
-      }
-
-    } catch (error: any) {
-      logger.error({ error }, "Error generating LLM response");
-      console.error("GEMINI ERROR MESSAGE:", error.message);
-      if (error.stack) console.error(error.stack);
-      onSentence("I'm having trouble connecting right now.");
-    }
-  }
-
   private processBuffer(text: string, onSentence: (text: string) => void) {
     if (!text) return;
     const sentences = text.match(/[^.?!]+[.?!]+|[^.?!]+$/g) || [text];
     sentences.forEach((sentence) => {
       const trimmed = sentence.trim();
       if (trimmed) {
-        logger.info(`🤖 AI (Speaking): ${trimmed}`);
+        logger.info(`AI (Speaking): ${trimmed}`);
         onSentence(trimmed);
       }
     });

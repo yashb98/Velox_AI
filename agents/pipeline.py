@@ -2,51 +2,60 @@
 pipeline.py — Multi-provider LLM pipeline for Velox AI voice calls.
 
 Supports:
-  - Kimi/Moonshot AI (OpenAI-compatible)
-  - Google Gemini (via ADK)
-  - OpenAI
+  - SGLang (self-hosted on Modal) — primary for T1/T2
+  - Kimi/Moonshot AI (OpenAI-compatible) — T3 fallback
+  - OpenAI — alternative fallback
 
-Architecture (A1 + A4):
-  SequentialAgent
-    └─ RouterAgent       (chooses Phi-3 / Flash / Pro tier)
-    └─ ResponderAgent    (generates the final reply using chosen model)
+Model Routing Architecture:
+  T0 Router:  Qwen3.5-3B     → classify intent + complexity  (<30ms)
+  T1 Fast:    Nemotron Nano  → 70-80% of turns               (<100ms TTFT)
+  T2 Medium:  Qwen3.5-35B    → multi-turn, tool orchestration (<200ms TTFT)
+  T3 Heavy:   Kimi K2.5 API  → edge cases, multi-hop RAG     (<500ms TTFT)
 
-Routing heuristic (A4):
-  word_count < 15  →  Phi-3-mini or cheapest model  (SLM, < 70 % of turns)
-  word_count < 50  →  Mid-tier model (gemini-flash or kimi-8k)
-  else             →  Top-tier model (gemini-pro or kimi-128k)
+The semantic router (router.py) classifies intent to select the tier.
+Word count heuristic is used as fallback when SGLang is unavailable.
 """
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 
+from router import ModelTier, route_request, get_tier_model
+
 logger = logging.getLogger(__name__)
 
 # ─── Environment ──────────────────────────────────────────────────────────────
-LLM_PROVIDER     = os.getenv("LLM_PROVIDER", "gemini").lower()
-GEMINI_API_KEY   = os.getenv("GEMINI_API_KEY", "")
-KIMI_API_KEY     = os.getenv("KIMI_API_KEY", os.getenv("MOONSHOT_API_KEY", ""))
-KIMI_BASE_URL    = os.getenv("KIMI_BASE_URL", "https://api.moonshot.cn/v1")
-OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY", "")
-PHI3_SERVICE_URL = os.getenv("PHI3_SERVICE_URL", "")   # e.g. http://slm:8001/generate
 
-# ─── Model aliases per provider ───────────────────────────────────────────────
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "sglang").lower()
+
+# SGLang (self-hosted on Modal)
+SGLANG_BASE_URL = os.getenv("SGLANG_BASE_URL", "")
+SGLANG_API_KEY = os.getenv("SGLANG_API_KEY", "")
+
+# Kimi / Moonshot AI (T3 fallback + alternative provider)
+KIMI_API_KEY = os.getenv("KIMI_API_KEY", os.getenv("MOONSHOT_API_KEY", ""))
+KIMI_BASE_URL = os.getenv("KIMI_BASE_URL", "https://api.moonshot.cn/v1")
+
+# OpenAI (alternative fallback)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+# ─── Model Configuration ─────────────────────────────────────────────────────
+
 MODELS = {
+    "sglang": {
+        "router": os.getenv("SGLANG_MODEL_T0", "Qwen/Qwen2.5-3B-Instruct"),
+        "fast": os.getenv("SGLANG_MODEL_T1", "nvidia/Nemotron-3-Nano-4B-Instruct"),
+        "medium": os.getenv("SGLANG_MODEL_T2", "Qwen/Qwen2.5-32B-Instruct"),
+    },
     "kimi": {
         "fast": os.getenv("KIMI_MODEL", "moonshot-v1-8k"),
         "balanced": "moonshot-v1-32k",
-        "powerful": "moonshot-v1-128k",
-    },
-    "gemini": {
-        "fast": "gemini-2.5-flash",
-        "balanced": "gemini-2.5-flash",
-        "powerful": "gemini-2.5-pro",
+        "powerful": os.getenv("KIMI_MODEL_POWERFUL", "kimi-k2.5"),
     },
     "openai": {
         "fast": "gpt-4o-mini",
@@ -55,10 +64,10 @@ MODELS = {
     },
 }
 
-# ─── Routing thresholds (A4) ──────────────────────────────────────────────────
-PHI3_MAX_WORDS  = 15   # < 15 words → Phi-3-mini  (~70 % of short turns)
-FLASH_MAX_WORDS = 50   # < 50 words → Fast model (~25 %)
-                       #  ≥ 50 words → Powerful model (~ 5 %)
+# ─── Routing Thresholds (fallback when no semantic router) ────────────────────
+
+T1_MAX_WORDS = int(os.getenv("T1_MAX_WORDS", "15"))
+T2_MAX_WORDS = int(os.getenv("T2_MAX_WORDS", "50"))
 
 
 @dataclass
@@ -74,35 +83,12 @@ class PipelineRequest:
 class PipelineResponse:
     response: str
     model_used: str
+    tier: str = ""
+    latency_ms: float = 0.0
 
 
-# ─── Phi-3 SLM proxy (A4) ────────────────────────────────────────────────────
+# ─── OpenAI-compatible API call ───────────────────────────────────────────────
 
-async def _call_phi3(user_message: str, context: str, system_prompt: str) -> Optional[str]:
-    """
-    Calls the Phi-3-mini SLM sidecar service.
-    Returns None on any error so the caller can fall back to the main LLM.
-    """
-    if not PHI3_SERVICE_URL:
-        return None
-    try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.post(
-                PHI3_SERVICE_URL,
-                json={
-                    "system": system_prompt,
-                    "context": context,
-                    "message": user_message,
-                },
-            )
-            resp.raise_for_status()
-            return resp.json().get("response")
-    except Exception as exc:
-        logger.error("Phi-3 call failed: %s", exc)
-        return None
-
-
-# ─── OpenAI-compatible API call (Kimi, OpenAI) ────────────────────────────────
 
 async def _call_openai_compatible(
     user_message: str,
@@ -110,10 +96,12 @@ async def _call_openai_compatible(
     system_prompt: str,
     model: str,
     api_key: str,
-    base_url: str = "https://api.openai.com/v1"
+    base_url: str = "https://api.openai.com/v1",
 ) -> str:
     """
-    Calls any OpenAI-compatible API (Kimi, OpenAI, etc.)
+    Calls any OpenAI-compatible API (SGLang, Kimi, OpenAI).
+
+    SGLang on Modal exposes the same /v1/chat/completions endpoint.
     """
     full_system = system_prompt
     if context:
@@ -141,73 +129,93 @@ async def _call_openai_compatible(
         return data["choices"][0]["message"]["content"]
 
 
-# ─── Gemini API call (via ADK) ────────────────────────────────────────────────
-
-async def _call_gemini(user_message: str, context: str, system_prompt: str, model: str) -> str:
+async def _call_sglang(
+    user_message: str,
+    context: str,
+    system_prompt: str,
+    model: str,
+) -> str:
     """
-    Calls Gemini via Google ADK LiteLLM.
+    Calls SGLang server (self-hosted on Modal).
+
+    Uses the same OpenAI-compatible interface.
     """
-    try:
-        from google.adk.agents import LlmAgent
-        from google.adk.models.lite_llm import LiteLlm
+    if not SGLANG_BASE_URL:
+        raise ValueError("SGLANG_BASE_URL not configured")
 
-        full_instruction = system_prompt
-        if context:
-            full_instruction += f"\n\n=== KNOWLEDGE BASE ===\n{context}\n======================"
-
-        agent = LlmAgent(
-            name="gemini_responder",
-            model=LiteLlm(model=f"google/{model}", api_key=GEMINI_API_KEY),
-            instruction=full_instruction,
-            description="Gemini responder",
-        )
-
-        result = await agent.run_async(user_message)
-        return result.text if hasattr(result, "text") else str(result)
-    except Exception as exc:
-        logger.error("Gemini call failed: %s", exc)
-        raise
+    return await _call_openai_compatible(
+        user_message=user_message,
+        context=context,
+        system_prompt=system_prompt,
+        model=model,
+        api_key=SGLANG_API_KEY,
+        base_url=SGLANG_BASE_URL,
+    )
 
 
 # ─── Main pipeline entry point ────────────────────────────────────────────────
+
 
 async def run_pipeline(req: PipelineRequest) -> PipelineResponse:
     """
     Entry point called by main.py for every incoming /generate request.
 
-    Routing logic (A4):
-      1.  word_count < PHI3_MAX_WORDS  →  try Phi-3-mini SLM first
-          (falls back to fast model if PHI3_SERVICE_URL is unset or call fails)
-      2.  word_count < FLASH_MAX_WORDS →  Fast model
-      3.  else                         →  Powerful model
+    Routing logic:
+      1. Use semantic router (T0) to classify intent if SGLang is available
+      2. Fall back to word count heuristic otherwise
+      3. Route to T1 (Nemotron Nano), T2 (Qwen 32B), or T3 (Kimi K2.5)
     """
-    word_count = len(req.user_message.split())
+    import time
+
+    start_time = time.perf_counter()
     system_prompt = _build_system_prompt("")
 
-    # Get models for current provider
-    provider_models = MODELS.get(LLM_PROVIDER, MODELS["gemini"])
+    # ── Route the request ─────────────────────────────────────────────────────
+    routing_result = await route_request(req.user_message)
+    tier = routing_result.tier
 
-    # ── Phi-3 path (A4) ───────────────────────────────────────────────────────
-    if word_count < PHI3_MAX_WORDS and PHI3_SERVICE_URL:
-        phi3_reply = await _call_phi3(req.user_message, req.context, system_prompt)
-        if phi3_reply:
-            logger.info("Route: phi-3-mini (words=%d)", word_count)
-            return PipelineResponse(response=phi3_reply, model_used="phi-3-mini")
-        logger.info("Phi-3 fallback → %s (words=%d)", provider_models["fast"], word_count)
+    logger.info(
+        "Route: tier=%s intent=%s confidence=%.2f routing_ms=%.1f provider=%s",
+        tier.value,
+        routing_result.intent,
+        routing_result.confidence,
+        routing_result.latency_ms,
+        LLM_PROVIDER,
+    )
 
-    # ── Select model tier based on word count ─────────────────────────────────
-    if word_count < FLASH_MAX_WORDS:
-        model = provider_models["fast"]
-        tier = "fast"
-    else:
-        model = provider_models["powerful"]
-        tier = "powerful"
-
-    logger.info("Route: %s (%s tier, words=%d, provider=%s)", model, tier, word_count, LLM_PROVIDER)
-
-    # ── Call the appropriate provider ─────────────────────────────────────────
+    # ── Select provider and model based on tier ───────────────────────────────
     try:
-        if LLM_PROVIDER == "kimi":
+        if LLM_PROVIDER == "sglang" and SGLANG_BASE_URL:
+            # SGLang for T1 and T2
+            if tier in (ModelTier.T1_FAST, ModelTier.T2_MEDIUM):
+                model = get_tier_model(tier, "sglang")
+                response_text = await _call_sglang(
+                    req.user_message,
+                    req.context,
+                    system_prompt,
+                    model,
+                )
+            else:
+                # T3 goes to Kimi K2.5
+                model = MODELS["kimi"]["powerful"]
+                response_text = await _call_openai_compatible(
+                    req.user_message,
+                    req.context,
+                    system_prompt,
+                    model,
+                    KIMI_API_KEY,
+                    KIMI_BASE_URL,
+                )
+
+        elif LLM_PROVIDER == "kimi":
+            # All tiers go through Kimi
+            if tier == ModelTier.T1_FAST:
+                model = MODELS["kimi"]["fast"]
+            elif tier == ModelTier.T2_MEDIUM:
+                model = MODELS["kimi"]["balanced"]
+            else:
+                model = MODELS["kimi"]["powerful"]
+
             response_text = await _call_openai_compatible(
                 req.user_message,
                 req.context,
@@ -216,7 +224,16 @@ async def run_pipeline(req: PipelineRequest) -> PipelineResponse:
                 KIMI_API_KEY,
                 KIMI_BASE_URL,
             )
+
         elif LLM_PROVIDER == "openai":
+            # All tiers go through OpenAI
+            if tier == ModelTier.T1_FAST:
+                model = MODELS["openai"]["fast"]
+            elif tier == ModelTier.T2_MEDIUM:
+                model = MODELS["openai"]["balanced"]
+            else:
+                model = MODELS["openai"]["powerful"]
+
             response_text = await _call_openai_compatible(
                 req.user_message,
                 req.context,
@@ -225,26 +242,46 @@ async def run_pipeline(req: PipelineRequest) -> PipelineResponse:
                 OPENAI_API_KEY,
                 "https://api.openai.com/v1",
             )
-        else:  # Default: Gemini
-            response_text = await _call_gemini(
+
+        else:
+            # Default fallback to Kimi
+            model = MODELS["kimi"]["fast"]
+            response_text = await _call_openai_compatible(
                 req.user_message,
                 req.context,
                 system_prompt,
                 model,
+                KIMI_API_KEY,
+                KIMI_BASE_URL,
             )
 
-        return PipelineResponse(response=response_text, model_used=model)
+        total_latency_ms = (time.perf_counter() - start_time) * 1000
+        logger.info(
+            "Response generated: model=%s tier=%s total_ms=%.1f",
+            model, tier.value, total_latency_ms
+        )
+
+        return PipelineResponse(
+            response=response_text,
+            model_used=model,
+            tier=tier.value,
+            latency_ms=total_latency_ms,
+        )
 
     except Exception as exc:
         logger.error("LLM call failed: %s", exc)
-        # Return a fallback response
+        total_latency_ms = (time.perf_counter() - start_time) * 1000
+
         return PipelineResponse(
             response="I'm having trouble processing that right now. Please try again.",
-            model_used=f"{model} (error)",
+            model_used=f"{LLM_PROVIDER} (error)",
+            tier=tier.value,
+            latency_ms=total_latency_ms,
         )
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _build_system_prompt(context: str) -> str:
     base = (

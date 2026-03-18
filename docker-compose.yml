@@ -12,18 +12,19 @@
 #     web       → React / Vite frontend     (port 5173)
 #
 #   AI Pipeline
-#     agents    → Python FastAPI + Google ADK (port 8000)
-#     voice     → Pipecat voice pipeline      (port 8003)
-#     slm       → Phi-3-mini GGUF sidecar     (port 8001) [profile: slm]
+#     agents    → Python FastAPI + SGLang routing (port 8000)
+#     voice     → Pipecat voice pipeline          (port 8003)
+#
+# LLM Inference:
+#   SGLang on Modal (external) hosts T1/T2 models (Nemotron Nano, Qwen 32B)
+#   Kimi K2.5 API for T3 heavy queries
 #
 # ── Quick start ──────────────────────────────────────────────────────────────
 #   cp .env.example .env                  # fill in real API keys
-#   docker compose up --build             # core stack (no SLM, no MLflow)
+#   docker compose up --build             # core stack
 #
 # ── Optional profiles ────────────────────────────────────────────────────────
-#   --profile slm    → add Phi-3-mini GGUF sidecar (needs model file first)
 #   --profile mlflow → add MLflow experiment tracking UI
-#   --profile slm --profile mlflow → everything
 #
 # ── Migrations run automatically on API startup via docker-entrypoint.sh ────
 #   New DB: auto-applied on first boot
@@ -113,36 +114,8 @@ services:
     networks:
       - velox_net
 
-  # ── Phi-3-mini GGUF SLM sidecar ───────────────────────────────────────────────
-  # Optional — start with: docker compose --profile slm up
-  # Requires model file: agents/slm/models/phi-3-mini-4k-instruct-q4.gguf
-  # Download: https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
-  # Routes ~70% of short voice turns locally, avoiding Gemini API calls.
-  slm:
-    profiles: ["slm"]
-    build:
-      context: ./agents/slm
-      dockerfile: Dockerfile
-    container_name: velox_slm
-    restart: unless-stopped
-    ports:
-      - "8001:8001"
-    volumes:
-      - ./agents/slm/models:/app/models:ro
-    environment:
-      - MODEL_PATH=/app/models/phi-3-mini-4k-instruct-q4.gguf
-      - PORT=8001
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s   # GGUF model load takes 30-60 s
-    networks:
-      - velox_net
-
-  # ── ADK Agent Service (A1 — Google ADK multi-model pipeline) ────────────────
-  # Handles LLM routing: Phi-3 SLM → Gemini Flash → Gemini Pro
+  # ── LLM Agent Service (SGLang routing) ────────────────────────────────────────
+  # Handles LLM routing: T1 (Nemotron Nano) → T2 (Qwen 32B) → T3 (Kimi K2.5)
   # Exposes POST /generate used by velox-api orchestrator.ts
   # Host port 8002 avoids conflicts with other local services on 8000/8001
   agents:
@@ -155,11 +128,19 @@ services:
       - "8002:8000"
     environment:
       - PORT=8000
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # SGLang (self-hosted on Modal) for T1/T2 models
+      - LLM_PROVIDER=${LLM_PROVIDER:-sglang}
+      - SGLANG_BASE_URL=${SGLANG_BASE_URL:-}
+      - SGLANG_API_KEY=${SGLANG_API_KEY:-}
+      - SGLANG_MODEL_T0=${SGLANG_MODEL_T0:-Qwen/Qwen2.5-3B-Instruct}
+      - SGLANG_MODEL_T1=${SGLANG_MODEL_T1:-nvidia/Nemotron-3-Nano-4B-Instruct}
+      - SGLANG_MODEL_T2=${SGLANG_MODEL_T2:-Qwen/Qwen2.5-32B-Instruct}
+      # Kimi for T3 fallback
+      - KIMI_API_KEY=${KIMI_API_KEY:-}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
+      # OpenAI (alternative)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
-      # Points to SLM sidecar when that profile is active;
-      # the agents service gracefully falls back to Gemini Flash if unreachable.
-      - PHI3_SERVICE_URL=${PHI3_SERVICE_URL:-http://slm:8001/generate}
     depends_on:
       db:
         condition: service_healthy
@@ -202,11 +183,14 @@ services:
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
 
       # ── LLM Providers ───────────────────────────────────────────────────────────
-      - LLM_PROVIDER=${LLM_PROVIDER:-kimi}
+      - LLM_PROVIDER=${LLM_PROVIDER:-sglang}
+      - SGLANG_BASE_URL=${SGLANG_BASE_URL:-}
+      - SGLANG_API_KEY=${SGLANG_API_KEY:-}
+      - SGLANG_MODEL_T1=${SGLANG_MODEL_T1:-nvidia/Nemotron-3-Nano-4B-Instruct}
+      - SGLANG_MODEL_T2=${SGLANG_MODEL_T2:-Qwen/Qwen2.5-32B-Instruct}
       - KIMI_API_KEY=${KIMI_API_KEY:-}
       - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
 
       # ── Twilio ──────────────────────────────────────────────────────────────────
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
@@ -263,8 +247,6 @@ services:
 
       # ── External APIs (required) ──────────────────────────────────────────────
       - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
@@ -279,9 +261,15 @@ services:
       - STRIPE_PRO_PRICE_ID=${STRIPE_PRO_PRICE_ID:-}
       - STRIPE_ENTERPRISE_PRICE_ID=${STRIPE_ENTERPRISE_PRICE_ID:-}
 
-      # ── ADK Python pipeline ───────────────────────────────────────────────────
+      # ── LLM Agent pipeline ───────────────────────────────────────────────────
       # Leave blank to fall back to the local inline LLMService
-      - ADK_SERVICE_URL=http://agents:8000
+      - AGENTS_SERVICE_URL=http://agents:8000
+      # SGLang (for direct API calls from Node.js)
+      - SGLANG_BASE_URL=${SGLANG_BASE_URL:-}
+      - SGLANG_API_KEY=${SGLANG_API_KEY:-}
+      - KIMI_API_KEY=${KIMI_API_KEY:-}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
+      - LLM_PROVIDER=${LLM_PROVIDER:-sglang}
 
       # ── Observability (optional — graceful no-op when blank) ──────────────────
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}

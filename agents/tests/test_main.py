@@ -27,7 +27,7 @@ class TestHealthEndpoint:
 
     def test_health_returns_service_name(self):
         response = client.get("/health")
-        assert response.json()["service"] == "velox-adk-agents"
+        assert response.json()["service"] == "velox-llm-agents"
 
 
 class TestGenerateEndpoint:
@@ -55,7 +55,8 @@ class TestGenerateEndpoint:
         from pipeline import PipelineResponse
         mock_pipeline.return_value = PipelineResponse(
             response="Test response",
-            model_used="gemini-2.5-flash"
+            model_used="nvidia/Nemotron-3-Nano-4B-Instruct",
+            tier="t1_fast",
         )
 
         response = client.post("/generate", json={
@@ -66,7 +67,7 @@ class TestGenerateEndpoint:
 
         assert response.status_code == 200
         assert response.json()["response"] == "Test response"
-        assert response.json()["model_used"] == "gemini-2.5-flash"
+        assert response.json()["model_used"] == "nvidia/Nemotron-3-Nano-4B-Instruct"
         mock_pipeline.assert_called_once()
 
     @patch("main.run_pipeline")
@@ -74,7 +75,8 @@ class TestGenerateEndpoint:
         from pipeline import PipelineResponse
         mock_pipeline.return_value = PipelineResponse(
             response="Response",
-            model_used="phi-3-mini"
+            model_used="moonshot-v1-8k",
+            tier="t1_fast",
         )
 
         response = client.post("/generate", json={
@@ -83,14 +85,15 @@ class TestGenerateEndpoint:
             "agent_id": "test",
         })
 
-        assert response.json()["model_used"] == "phi-3-mini"
+        assert response.json()["model_used"] == "moonshot-v1-8k"
 
     def test_generate_accepts_optional_fields(self):
         with patch("main.run_pipeline") as mock_pipeline:
             from pipeline import PipelineResponse
             mock_pipeline.return_value = PipelineResponse(
                 response="OK",
-                model_used="gemini-2.5-flash"
+                model_used="nvidia/Nemotron-3-Nano-4B-Instruct",
+                tier="t1_fast",
             )
 
             response = client.post("/generate", json={
@@ -114,7 +117,8 @@ class TestRequestValidation:
             from pipeline import PipelineResponse
             mock_pipeline.return_value = PipelineResponse(
                 response="OK",
-                model_used="gemini-2.5-flash"
+                model_used="nvidia/Nemotron-3-Nano-4B-Instruct",
+                tier="t1_fast",
             )
 
             response = client.post("/generate", json={

@@ -3,14 +3,16 @@
 Multi-provider LLM service for voice pipeline.
 
 Supports:
-  - Kimi/Moonshot AI (OpenAI-compatible) - primary
-  - OpenAI
-  - Gemini (future: via SGLang)
+  - SGLang (self-hosted on Modal) - primary, T1/T2 models
+  - Kimi/Moonshot AI (OpenAI-compatible) - T3 fallback
+  - OpenAI - alternative fallback
 
-Reuses routing logic from agents/pipeline.py:
-  - word_count < 15  → SLM tier (future: Nemotron Nano)
-  - word_count < 50  → Fast tier (moonshot-v1-8k / gpt-4o-mini)
-  - else             → Powerful tier (moonshot-v1-128k / gpt-4o)
+Model Routing (4-tier):
+  - T1 Fast:    Nemotron Nano  → 70-80% of turns  (<100ms TTFT)
+  - T2 Medium:  Qwen3.5-32B    → 15-25% of turns  (<200ms TTFT)
+  - T3 Heavy:   Kimi K2.5      → 5-10% of turns   (<500ms TTFT)
+
+All providers use OpenAI-compatible API format.
 """
 
 from __future__ import annotations
@@ -30,9 +32,9 @@ logger = logging.getLogger(__name__)
 class ModelTier(Enum):
     """LLM model tiers based on complexity."""
 
-    SLM = "slm"  # Future: Nemotron Nano via SGLang
-    FAST = "fast"  # moonshot-v1-8k, gpt-4o-mini
-    POWERFUL = "powerful"  # moonshot-v1-128k, gpt-4o
+    T1_FAST = "t1_fast"      # Nemotron Nano via SGLang
+    T2_MEDIUM = "t2_medium"  # Qwen 32B via SGLang
+    T3_HEAVY = "t3_heavy"    # Kimi K2.5 API
 
 
 @dataclass
@@ -50,13 +52,20 @@ class LLMService:
 
     # Model mappings per provider
     MODELS = {
+        "sglang": {
+            ModelTier.T1_FAST: settings.sglang_model_t1,
+            ModelTier.T2_MEDIUM: settings.sglang_model_t2,
+            ModelTier.T3_HEAVY: settings.sglang_model_t2,  # Fallback to T2
+        },
         "kimi": {
-            ModelTier.FAST: settings.kimi_model_fast,
-            ModelTier.POWERFUL: settings.kimi_model_powerful,
+            ModelTier.T1_FAST: settings.kimi_model_fast,
+            ModelTier.T2_MEDIUM: "moonshot-v1-32k",
+            ModelTier.T3_HEAVY: settings.kimi_model_powerful,
         },
         "openai": {
-            ModelTier.FAST: settings.openai_model_fast,
-            ModelTier.POWERFUL: settings.openai_model_powerful,
+            ModelTier.T1_FAST: settings.openai_model_fast,
+            ModelTier.T2_MEDIUM: settings.openai_model_fast,
+            ModelTier.T3_HEAVY: settings.openai_model_powerful,
         },
     }
 
@@ -80,44 +89,56 @@ class LLMService:
         """
         Select model tier based on input word count.
 
-        Routing heuristic (from pipeline.py):
-          - < 15 words → SLM (falls back to FAST for now)
-          - < 50 words → FAST
-          - >= 50 words → POWERFUL
+        Routing heuristic:
+          - < 15 words → T1 Fast (Nemotron Nano)
+          - < 50 words → T2 Medium (Qwen 32B)
+          - >= 50 words → T3 Heavy (Kimi K2.5)
         """
-        if word_count < settings.tier_slm_max_words:
-            # Future: return ModelTier.SLM when Nemotron Nano is available
-            return ModelTier.FAST
-        elif word_count < settings.tier_fast_max_words:
-            return ModelTier.FAST
+        if word_count < settings.tier_t1_max_words:
+            return ModelTier.T1_FAST
+        elif word_count < settings.tier_t2_max_words:
+            return ModelTier.T2_MEDIUM
         else:
-            return ModelTier.POWERFUL
+            return ModelTier.T3_HEAVY
 
     def _get_model(self, tier: ModelTier) -> str:
         """Get model name for current provider and tier."""
         provider_models = self.MODELS.get(self.provider, self.MODELS["kimi"])
-        return provider_models.get(tier, provider_models[ModelTier.FAST])
+        return provider_models.get(tier, provider_models[ModelTier.T1_FAST])
 
-    def _get_api_config(self) -> tuple[str, str, str]:
-        """Get API key, base URL, and model for current provider."""
-        if self.provider == "kimi":
+    def _get_api_config(self, tier: ModelTier = ModelTier.T1_FAST) -> tuple[str, str, str]:
+        """Get API key, base URL, and model for current provider and tier."""
+        if self.provider == "sglang":
+            # T3 falls back to Kimi K2.5 API
+            if tier == ModelTier.T3_HEAVY and settings.kimi_api_key:
+                return (
+                    settings.kimi_api_key,
+                    settings.kimi_base_url,
+                    settings.kimi_model_powerful,
+                )
+            return (
+                settings.sglang_api_key,
+                settings.sglang_base_url,
+                self._get_model(tier),
+            )
+        elif self.provider == "kimi":
             return (
                 settings.kimi_api_key,
                 settings.kimi_base_url,
-                self._get_model(ModelTier.FAST),
+                self._get_model(tier),
             )
         elif self.provider == "openai":
             return (
                 settings.openai_api_key,
                 "https://api.openai.com/v1",
-                self._get_model(ModelTier.FAST),
+                self._get_model(tier),
             )
         else:
             # Default to Kimi
             return (
                 settings.kimi_api_key,
                 settings.kimi_base_url,
-                self._get_model(ModelTier.FAST),
+                self._get_model(tier),
             )
 
     async def generate(
@@ -155,10 +176,13 @@ class LLMService:
         )
 
         try:
+            api_key, base_url, _ = self._get_api_config(tier)
             response_text = await self._call_openai_compatible(
                 user_message=user_message,
                 system_prompt=full_system,
                 model=model,
+                api_key=api_key,
+                base_url=base_url,
             )
 
             return LLMResponse(
@@ -204,7 +228,7 @@ class LLMService:
             word_count,
         )
 
-        api_key, base_url, _ = self._get_api_config()
+        api_key, base_url, _ = self._get_api_config(tier)
         client = await self._get_client()
 
         try:
@@ -254,9 +278,12 @@ class LLMService:
         user_message: str,
         system_prompt: str,
         model: str,
+        api_key: str = "",
+        base_url: str = "",
     ) -> str:
-        """Call OpenAI-compatible API (Kimi, OpenAI)."""
-        api_key, base_url, _ = self._get_api_config()
+        """Call OpenAI-compatible API (SGLang, Kimi, OpenAI)."""
+        if not api_key or not base_url:
+            api_key, base_url, _ = self._get_api_config()
         client = await self._get_client()
 
         resp = await client.post(

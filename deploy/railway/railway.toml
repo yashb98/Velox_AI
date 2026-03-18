@@ -1,0 +1,17 @@
+# deploy/railway/railway.toml
+# Railway deployment configuration for Velox AI
+#
+# Note: Primary LLM inference runs on Modal (SGLang).
+# Railway hosts the Node.js API, voice service, and supporting infrastructure.
+#
+# Future: Add Railway services configuration here.
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

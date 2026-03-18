@@ -1,9 +1,15 @@
 """
-main.py — FastAPI entrypoint for the Velox ADK agent service.
+main.py — FastAPI entrypoint for the Velox LLM agent service.
 
 Exposes:
-  POST /generate   →  run the ADK pipeline and return an AI response
+  POST /generate   →  run the LLM pipeline with tier-based routing
   GET  /health     →  liveness probe for Docker / Kubernetes
+
+Model Routing:
+  T0 Router:  Qwen3.5-3B     → semantic intent classification
+  T1 Fast:    Nemotron Nano  → simple queries (70-80% of turns)
+  T2 Medium:  Qwen3.5-32B    → moderate complexity
+  T3 Heavy:   Kimi K2.5      → complex reasoning (external API)
 """
 
 from __future__ import annotations
@@ -25,7 +31,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ─── App ──────────────────────────────────────────────────────────────────────
-app = FastAPI(title="Velox ADK Agent Service", version="1.0.0")
+app = FastAPI(title="Velox LLM Agent Service", version="2.0.0")
 
 
 # ─── Request / Response schemas ───────────────────────────────────────────────
@@ -49,7 +55,7 @@ class GenerateResponse(BaseModel):
 async def generate(req: GenerateRequest) -> GenerateResponse:
     """
     Main inference endpoint called by the Node.js orchestrator.
-    Runs the ADK pipeline (Phi-3 / Flash / Pro routing) and returns the reply.
+    Routes to T1/T2/T3 tiers based on semantic classification.
     """
     if not req.user_message.strip():
         raise HTTPException(status_code=400, detail="user_message must not be empty")
@@ -77,7 +83,7 @@ async def generate(req: GenerateRequest) -> GenerateResponse:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "velox-adk-agents"}
+    return {"status": "ok", "service": "velox-llm-agents"}
 
 
 # ─── Entrypoint ───────────────────────────────────────────────────────────────
