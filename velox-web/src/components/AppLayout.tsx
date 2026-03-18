@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Play,
   GitBranch,
+  Shield,
 } from 'lucide-react'
 
 // ── Nav items ──────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { to: '/flow',       label: 'Flow',       icon: GitBranch },
   { to: '/calls',      label: 'Calls',      icon: Phone },
   { to: '/knowledge',  label: 'Knowledge',  icon: BookOpen },
+  { to: '/policy',     label: 'Policy',     icon: Shield },
   { to: '/billing',    label: 'Billing',    icon: CreditCard },
 ]
 

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend,
@@ -15,9 +15,10 @@ import { Button } from '@/components/ui/button'
 import {
   Phone, PhoneCall, TrendingUp, ArrowRight, Activity,
   Bot, Plus, Play, BarChart3, CheckCircle2, XCircle,
-  Clock, Loader2, Zap, Users,
+  Clock, Loader2, Zap, Users, Sparkles,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { InteractiveTutorial } from '@/components/tutorial/InteractiveTutorial'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,7 @@ const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: (i: number) => ({ opaci
 
 export default function Dashboard() {
   const [range, setRange] = useState<'today' | 'week' | 'all'>('today')
+  const [showTutorial, setShowTutorial] = useState(false)
 
   const { data: convData, isLoading: loadingConvs, isError: errConvs } = useQuery<ConversationListResponse>({
     queryKey: ['conversations', 'dashboard'],
@@ -162,6 +164,14 @@ export default function Dashboard() {
   const isLoading = loadingConvs || loadingAgents
 
   return (
+    <>
+      {/* Tutorial overlay */}
+      <AnimatePresence>
+        {showTutorial && (
+          <InteractiveTutorial onClose={() => setShowTutorial(false)} />
+        )}
+      </AnimatePresence>
+
     <div className="min-h-full bg-slate-950">
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10">
@@ -175,6 +185,15 @@ export default function Dashboard() {
 
           {/* Quick actions */}
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowTutorial(true)}
+              className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:border-amber-400 hover:text-amber-200"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Start Tutorial
+            </Button>
             <Button size="sm" variant="ghost"
               className="text-slate-300 hover:text-white hover:bg-slate-800"
               asChild>
@@ -184,9 +203,9 @@ export default function Dashboard() {
               </Link>
             </Button>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-500 text-white" asChild>
-              <Link to="/agents">
+              <Link to="/playground">
                 <Play className="h-3.5 w-3.5 mr-1.5" />
-                Open Playground
+                Playground
               </Link>
             </Button>
           </div>
@@ -568,5 +587,6 @@ export default function Dashboard() {
         </motion.div>
       </div>
     </div>
+    </>
   )
 }

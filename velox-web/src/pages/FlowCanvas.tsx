@@ -8,6 +8,7 @@
 //  • Node types: Start, Prompt, Tool, Condition, Handoff, End
 //  • Auto-save on change (debounced 1.5s) + manual Save button
 //  • Save status indicator
+//  • Demo flow seeding: auto-creates a "Tutorial Demo Flow" if none exists
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
@@ -48,11 +49,13 @@ import {
   ChevronRight,
   ChevronLeft,
   FolderOpen,
+  Sparkles,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { nodeTypes } from '@/components/flow/nodes'
 import { NodePropertiesPanel } from '@/components/flow/NodePropertiesPanel'
 import { AgentFlow } from '@/types/flow'
+import { DEMO_FLOW_KEY } from '@/lib/demoAgent'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,79 @@ function persistFlows(flows: SavedFlow[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(flows))
   } catch { /* noop */ }
+}
+
+// ── Demo flow seeding ──────────────────────────────────────────────────────────
+
+const DEMO_FLOW_CANVAS_ID = 'flow-demo-tutorial'
+
+/** Build the pre-canned tutorial demo flow nodes/edges */
+function buildDemoFlow(): AgentFlow {
+  return {
+    nodes: [
+      {
+        id: 'start-demo',
+        type: 'start',
+        position: { x: 240, y: 60 },
+        data: { label: 'Start', greeting: 'Hello! Welcome to Velox AI. How can I help you today?' },
+      },
+      {
+        id: 'prompt-demo',
+        type: 'prompt',
+        position: { x: 240, y: 200 },
+        data: { label: 'Understand Intent', prompt: 'Listen to the caller and determine whether they need support, sales, or billing.' },
+      },
+      {
+        id: 'condition-demo',
+        type: 'condition',
+        position: { x: 240, y: 360 },
+        data: { label: 'Route by Intent', condition: 'intent === "support" || intent === "billing" || intent === "sales"' },
+      },
+      {
+        id: 'handoff-demo',
+        type: 'handoff',
+        position: { x: 80, y: 520 },
+        data: { label: 'Human Handoff', transferTo: '+15550001234', reason: 'Complex query requiring human agent' },
+      },
+      {
+        id: 'end-demo',
+        type: 'end',
+        position: { x: 400, y: 520 },
+        data: { label: 'End Call', farewell: 'Thank you for calling. Have a great day!' },
+      },
+    ],
+    edges: [
+      { id: 'e-start-prompt', source: 'start-demo', target: 'prompt-demo' },
+      { id: 'e-prompt-cond',  source: 'prompt-demo', target: 'condition-demo' },
+      { id: 'e-cond-handoff', source: 'condition-demo', target: 'handoff-demo', label: 'Needs human' },
+      { id: 'e-cond-end',     source: 'condition-demo', target: 'end-demo', label: 'Resolved' },
+    ],
+  }
+}
+
+/**
+ * Ensure a demo flow exists in localStorage.
+ * If a flow with DEMO_FLOW_CANVAS_ID already exists, this is a no-op.
+ * Returns the id of the demo flow.
+ */
+function ensureDemoFlow(): string {
+  const all = loadFlows()
+  const existing = all.find((f) => f.id === DEMO_FLOW_CANVAS_ID)
+  if (existing) return DEMO_FLOW_CANVAS_ID
+
+  const demoSavedFlow: SavedFlow = {
+    id: DEMO_FLOW_CANVAS_ID,
+    name: '🎓 Tutorial Demo Flow',
+    updatedAt: new Date().toISOString(),
+    flow: buildDemoFlow(),
+  }
+  const next = [demoSavedFlow, ...all]
+  persistFlows(next)
+  // Also mirror to DEMO_FLOW_KEY so tutorial / demoAgent.ts can reference it
+  try {
+    localStorage.setItem(DEMO_FLOW_KEY, JSON.stringify(demoSavedFlow))
+  } catch { /* noop */ }
+  return DEMO_FLOW_CANVAS_ID
 }
 
 // ── Default starter flow ───────────────────────────────────────────────────────
@@ -115,10 +191,17 @@ const NODE_BUTTONS = [
 
 export default function FlowCanvas() {
   // ── Flow list state ──────────────────────────────────────────────────────────
-  const [flows, setFlows] = useState<SavedFlow[]>(loadFlows)
+  const [flows, setFlows] = useState<SavedFlow[]>(() => {
+    // Seed the demo flow on first render so the tutorial step immediately has something to show
+    ensureDemoFlow()
+    return loadFlows()
+  })
   const [activeId, setActiveId] = useState<string | null>(() => {
+    ensureDemoFlow()
     const saved = loadFlows()
-    return saved.length > 0 ? saved[0].id : null
+    // Default to the demo tutorial flow if it exists; otherwise first flow
+    const demo = saved.find((f) => f.id === DEMO_FLOW_CANVAS_ID)
+    return demo ? demo.id : saved.length > 0 ? saved[0].id : null
   })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [editingNameId, setEditingNameId] = useState<string | null>(null)
@@ -447,20 +530,28 @@ export default function FlowCanvas() {
                   </div>
                 )}
 
-                {flows.map((f) => (
+                {flows.map((f) => {
+                  const isDemo = f.id === DEMO_FLOW_CANVAS_ID
+                  return (
                   <div
                     key={f.id}
                     onClick={() => setActiveId(f.id)}
                     className={`
                       group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all
                       ${activeId === f.id
-                        ? 'bg-blue-600/20 border border-blue-500/30'
-                        : 'hover:bg-slate-800/70 border border-transparent'}
+                        ? isDemo
+                          ? 'bg-amber-500/20 border border-amber-500/30'
+                          : 'bg-blue-600/20 border border-blue-500/30'
+                        : isDemo
+                          ? 'hover:bg-amber-500/10 border border-amber-500/10'
+                          : 'hover:bg-slate-800/70 border border-transparent'}
                     `}
                   >
                     <GitBranch
                       className={`h-3.5 w-3.5 shrink-0 ${
-                        activeId === f.id ? 'text-blue-400' : 'text-slate-500'
+                        activeId === f.id
+                          ? isDemo ? 'text-amber-400' : 'text-blue-400'
+                          : isDemo ? 'text-amber-600' : 'text-slate-500'
                       }`}
                     />
 
@@ -515,7 +606,8 @@ export default function FlowCanvas() {
                       </>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Node type palette */}
@@ -589,6 +681,18 @@ export default function FlowCanvas() {
                 nodeColor={() => '#3b82f6'}
                 maskColor="rgba(2,6,23,0.7)"
               />
+
+              {/* Demo flow banner */}
+              {activeId === DEMO_FLOW_CANVAS_ID && (
+                <Panel position="top-center">
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-1.5 flex items-center gap-2 text-xs text-amber-300 backdrop-blur">
+                    <Sparkles className="h-3 w-3 shrink-0" />
+                    <span>
+                      <strong>Tutorial Demo Flow</strong> — Try connecting nodes, then click Save. This flow is stored locally.
+                    </span>
+                  </div>
+                </Panel>
+              )}
 
               {/* Keyboard shortcut hint */}
               <Panel position="bottom-center">
