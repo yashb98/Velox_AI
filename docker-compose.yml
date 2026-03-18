@@ -13,6 +13,7 @@
 #
 #   AI Pipeline
 #     agents    → Python FastAPI + Google ADK (port 8000)
+#     voice     → Pipecat voice pipeline      (port 8003)
 #     slm       → Phi-3-mini GGUF sidecar     (port 8001) [profile: slm]
 #
 # ── Quick start ──────────────────────────────────────────────────────────────
@@ -166,6 +167,69 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - velox_net
+
+  # ── Pipecat Voice Service ─────────────────────────────────────────────────────
+  # Handles voice calls via Daily.co WebRTC + Twilio PSTN bridge
+  # Target latency: <800ms voice-to-voice
+  # Prometheus metrics: http://localhost:8003/metrics
+  # Health check:       http://localhost:8003/health
+  voice:
+    build:
+      context: ./voice
+      dockerfile: Dockerfile
+    container_name: velox_voice
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - DATABASE_URL=postgresql+asyncpg://postgres:devpass@db:5432/velox_local
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      # ── Daily.co (WebRTC transport) ─────────────────────────────────────────────
+      - DAILY_API_KEY=${DAILY_API_KEY:-}
+
+      # ── STT / TTS ───────────────────────────────────────────────────────────────
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - CARTESIA_API_KEY=${CARTESIA_API_KEY:-}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+
+      # ── LLM Providers ───────────────────────────────────────────────────────────
+      - LLM_PROVIDER=${LLM_PROVIDER:-kimi}
+      - KIMI_API_KEY=${KIMI_API_KEY:-}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+
+      # ── Twilio ──────────────────────────────────────────────────────────────────
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+
+      # ── Internal API auth ───────────────────────────────────────────────────────
+      - BILLING_API_URL=http://api:8080
+      - VOICE_INTERNAL_SECRET=${VOICE_INTERNAL_SECRET:-dev-voice-secret}
+
+      # ── Observability ───────────────────────────────────────────────────────────
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\""]
       interval: 15s
       timeout: 5s
       retries: 3
