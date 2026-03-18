@@ -44,12 +44,14 @@ Velox AI is a production-ready platform for building AI voice agents that can ha
 
 **Core capabilities:**
 - 🎙️ Real-time voice calls via Twilio + Deepgram STT + Deepgram/ElevenLabs TTS
-- 🧠 Multi-agent LLM routing (Phi-3 SLM → Gemini Flash → Gemini Pro)
-- 📚 Hybrid RAG (keyword + semantic search over your knowledge base)
+- 🧠 Multi-provider LLM support (Kimi/Moonshot, Gemini, OpenAI)
+- 📚 **5-Layer Anti-Hallucination RAG** — GraphRAG, hybrid retrieval, multi-agent validation
+- 🤖 Agentic RAG patterns — Self-RAG, Corrective RAG, Adaptive RAG
 - 🛠️ Tool integrations (orders, inventory, calendar, CRM, human handoff)
 - 🎨 Visual flow builder — design conversation flows with drag-and-drop
 - 📊 Real-time analytics — cost tracking, sentiment, latency, Prometheus metrics
 - 🔐 Multi-tenant — org-level isolation, Clerk auth, Stripe billing
+- 💸 **Free tier support** — run with Neon (PostgreSQL) + Upstash (Redis)
 
 ---
 
@@ -147,9 +149,15 @@ Velox_AI/
 │
 ├── agents/                     # Python multi-agent pipeline
 │   ├── main.py                 # FastAPI server (POST /generate, GET /health)
-│   ├── pipeline.py             # Google ADK agent router
+│   ├── pipeline.py             # Multi-provider LLM router (Kimi/Gemini/OpenAI)
 │   ├── requirements.txt
 │   ├── Dockerfile
+│   ├── rag/                    # 5-Layer Anti-Hallucination RAG System
+│   │   ├── dspy_modules/       # DSPy 2.6 optimization (GEPA/MIPROv2)
+│   │   ├── retrievers/         # GraphRAG + Hybrid (dense+sparse+graph)
+│   │   ├── agentic_rag/        # Self-RAG, Corrective RAG, Adaptive RAG
+│   │   ├── orchestration/      # LangGraph multi-agent pipeline
+│   │   └── guardrails/         # Anti-hallucination checks
 │   └── slm/                    # Phi-3-mini GGUF sidecar (optional)
 │       ├── slm_server.py
 │       └── Dockerfile
@@ -231,6 +239,34 @@ docker compose --profile mlflow up --build
 | **API Metrics** | http://localhost:8080/metrics | Prometheus scrape endpoint |
 | **Agents Health** | http://localhost:8002/health | ADK pipeline status |
 | **MLflow UI** | http://localhost:5001 | Experiment tracking |
+
+---
+
+## Free Tier Setup (Development)
+
+Run Velox AI using free cloud services — no local PostgreSQL or Redis required.
+
+### Quick Start
+
+```bash
+# 1. Copy free tier template
+cp .env.free-tier .env
+
+# 2. Get free services:
+#    - PostgreSQL: https://neon.tech (0.5GB free)
+#    - Redis: https://upstash.com (10K commands/day)
+#    - LLM: Kimi API from https://platform.moonshot.cn
+
+# 3. Edit .env with your keys
+
+# 4. Run migrations
+cd velox-api && npx prisma migrate deploy && cd ..
+
+# 5. Start with free tier compose
+docker compose -f docker-compose.free-tier.yml up --build
+```
+
+See [docs/FREE-TIER-SETUP.md](docs/FREE-TIER-SETUP.md) for detailed instructions.
 
 ---
 
@@ -452,6 +488,16 @@ When someone calls your Twilio number:
 
 The multi-agent routing pipeline lives in `agents/` and is built with **Google ADK (Agent Development Kit)**.
 
+### Multi-Provider LLM Support
+
+Set `LLM_PROVIDER` in `.env` to switch providers:
+
+| Provider | Env Var | Models |
+|----------|---------|--------|
+| **Kimi** | `KIMI_API_KEY` | moonshot-v1-8k, 32k, 128k |
+| **Gemini** | `GEMINI_API_KEY` | gemini-2.5-flash, gemini-2.5-pro |
+| **OpenAI** | `OPENAI_API_KEY` | gpt-4o-mini, gpt-4o |
+
 ### How routing works
 
 ```
@@ -461,10 +507,10 @@ User speech
 Phi-3-mini SLM          ← fast, runs locally, handles ~70% of simple turns
      │ (complex query?)
      ▼
-Gemini Flash            ← cloud, handles most multi-turn conversations
+Fast Model              ← Kimi-8k / Gemini Flash / GPT-4o-mini
      │ (very complex?)
      ▼
-Gemini Pro              ← highest capability, used for critical decisions
+Powerful Model          ← Kimi-128k / Gemini Pro / GPT-4o
 ```
 
 ### Running with the Phi-3 SLM sidecar (optional)
@@ -494,6 +540,51 @@ Tools are defined in `velox-api/src/tools/definitions.ts` and registered in `reg
 | `get_customer_profile` | Fetch CRM record | `CRM_API_URL` |
 | `transfer_to_agent` | Hand off to human | `HANDOFF_API_URL` |
 | `search_knowledge_base` | RAG over uploaded docs | `FAQ_KB_ID` |
+
+---
+
+## Advanced RAG System
+
+Velox AI includes a **5-Layer Anti-Hallucination RAG** system in `agents/rag/`:
+
+```
+Layer 1: DSPy Optimization      → Automatic prompt tuning (GEPA/MIPROv2)
+Layer 2: GraphRAG + Hybrid      → Knowledge graph + dense + sparse retrieval
+Layer 3: Agentic RAG            → Self-RAG, Corrective RAG, Adaptive RAG
+Layer 4: Multi-Agent Pipeline   → LangGraph orchestration with validation
+Layer 5: Guardrails             → Citation enforcement, calibrated abstention
+```
+
+### Usage
+
+```python
+from agents.rag import create_rag_pipeline
+
+# Create pipeline with all layers
+pipeline = create_rag_pipeline(
+    retriever=my_retriever,
+    enable_guardrails=True,
+    abstention_threshold=0.4
+)
+
+# Run query
+result = await pipeline.run("Your question here")
+print(result.final_response)
+print(f"Confidence: {result.confidence_score:.0%}")
+```
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `SelfRAGAgent` | Reflects on retrieval decisions, grades relevance |
+| `CorrectiveRAGAgent` | Falls back to web search when local docs fail |
+| `AdaptiveRAGAgent` | Auto-selects strategy based on query complexity |
+| `GraphRAGRetriever` | Entity extraction + knowledge graph queries |
+| `HybridRetriever` | Fuses dense, sparse, and graph retrieval |
+| `AntiHallucinationGuardrail` | Entropy probes + citation enforcement |
+
+See [docs/architecture/15-advanced-rag-architecture.md](docs/architecture/15-advanced-rag-architecture.md) for full documentation.
 
 ---
 
@@ -597,5 +688,5 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <div align="center">
-Built with ❤️ using Gemini · Deepgram · Twilio · Google ADK
+Built with Gemini · Kimi · Deepgram · Twilio · LangGraph · DSPy
 </div>
