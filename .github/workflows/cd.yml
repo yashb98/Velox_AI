@@ -1,0 +1,81 @@
+# .github/workflows/cd.yml
+#
+# Velox AI — Continuous Deployment Pipeline
+#
+# Reference: docs/architecture/08-mlops-cicd.md §8.3
+#
+# Triggers on push to main (after CI passes):
+#   1. Build Docker images
+#   2. Push to Google Artifact Registry
+#   3. Deploy to Cloud Run (via Cloud Build trigger)
+#
+# Note: Actual deployment is handled by Cloud Build for better
+# Secret Manager integration. This workflow triggers the Cloud Build.
+
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: europe-west2
+  ARTIFACT_REGISTRY: europe-west2-docker.pkg.dev
+
+jobs:
+  # ─── Wait for CI to pass ────────────────────────────────────────────────────
+  wait-for-ci:
+    name: Wait for CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI workflow
+        uses: fountainhead/action-wait-for-check@v1.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: API - Build
+          ref: ${{ github.sha }}
+          timeoutSeconds: 600
+
+  # ─── Trigger Cloud Build ────────────────────────────────────────────────────
+  deploy:
+    name: Deploy via Cloud Build
+    runs-on: ubuntu-latest
+    needs: wait-for-ci
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Trigger Cloud Build
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --substitutions=COMMIT_SHA=${{ github.sha }},BRANCH_NAME=${{ github.ref_name }}
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Deployment triggered for commit ${{ github.sha }}"
+          echo "View in Cloud Console: https://console.cloud.google.com/cloud-build/builds?project=${{ env.PROJECT_ID }}"

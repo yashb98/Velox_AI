@@ -161,7 +161,7 @@ Velox_AI/
 │   └── cron/
 │       └── finetune-scheduler.yaml # Cloud Scheduler (Mon 03:00)
 │
-└── inftrastructure/            # Terraform — Google Cloud
+└── infrastructure/             # Terraform — Google Cloud
     ├── main.tf                 # VPC, Cloud SQL, Redis
     ├── variables.tf
     ├── provider.tf
@@ -552,10 +552,10 @@ Set `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` to trace every LLM call:
 
 ### Google Cloud (production)
 
-Infrastructure is managed with Terraform in `inftrastructure/`:
+Infrastructure is managed with Terraform in `infrastructure/`:
 
 ```bash
-cd inftrastructure
+cd infrastructure
 
 # One-time setup
 terraform init

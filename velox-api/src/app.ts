@@ -2,7 +2,8 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
-import { v4 as uuidv4 } from "uuid"; // Sync import — eliminates the race condition
+import { v4 as uuidv4 } from "uuid";
+import swaggerUi from "swagger-ui-express";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { logger } from "./utils/logger";
 import { requireAuth } from "./middleware/auth";
@@ -14,11 +15,21 @@ import agentRoutes from "./routes/agents";
 import conversationRoutes from "./routes/conversations";
 import adminRoutes from "./routes/admin";
 import { metricsRegistry } from "./services/metricsService";
+import { swaggerSpec } from "./config/swagger";
 
 const app = express();
 
 // 1. Security
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
 app.use(
   cors({
     origin: process.env.DASHBOARD_URL || "http://localhost:5173",
@@ -49,7 +60,20 @@ app.use(
   })
 );
 
-// 6. Health check — includes uptime so load-balancers can detect slow restarts
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Service health check
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ */
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "ok",
@@ -58,11 +82,36 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-// 7. Prometheus metrics — unauthenticated, intended for internal scraper only
-//    Post-MVP Item 2: expose velox_* counters/histograms/gauges for Grafana
+/**
+ * @openapi
+ * /metrics:
+ *   get:
+ *     summary: Prometheus metrics
+ *     tags: [Health]
+ *     description: Returns metrics in Prometheus text format for scraping
+ *     responses:
+ *       200:
+ *         description: Metrics in Prometheus format
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ */
 app.get("/metrics", async (_req: Request, res: Response) => {
   res.set("Content-Type", metricsRegistry.contentType);
   res.end(await metricsRegistry.metrics());
+});
+
+// 6. API Documentation (Swagger UI)
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: "Velox AI API Documentation",
+  customCss: '.swagger-ui .topbar { display: none }',
+}));
+
+// 7. OpenAPI spec endpoint
+app.get("/api-docs.json", (_req: Request, res: Response) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
 });
 
 // 8. Protected API routes — requireAuth validates Clerk JWT on every request
