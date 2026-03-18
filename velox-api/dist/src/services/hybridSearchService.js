@@ -1,77 +1,74 @@
 "use strict";
 // src/services/hybridSearchService.ts
+//
+// 4.3 — SQL injection fix: ALL raw queries now use Prisma.sql tagged templates
+//        so every value is a bound parameter, never string-interpolated SQL.
+//        The old backtick template form (`prisma.$queryRaw`...`) still interpolates
+//        JS expressions directly — replaced with explicit Prisma.sql`` calls.
+// 4.1 — Uses knowledge_chunks (Prisma) exclusively; document_chunks retired.
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hybridSearchService = exports.HybridSearchService = void 0;
 const client_1 = require("@prisma/client");
 const logger_1 = require("../utils/logger");
 const prisma = new client_1.PrismaClient();
-/**
- * Reciprocal Rank Fusion (RRF)
- * Formula: RRF(d) = Σ 1/(k + rank(d))
- */
+// ─── Reciprocal Rank Fusion ──────────────────────────────────────────────────
+// Formula: RRF(d) = Σ 1/(k + rank(d))
 function reciprocalRankFusion(keywordResults, semanticResults, k = 60) {
     const rrfScores = new Map();
-    // Process keyword results
-    keywordResults.forEach((doc, index) => {
-        const rank = index + 1;
-        const score = 1 / (k + rank);
-        if (!rrfScores.has(doc.id)) {
-            rrfScores.set(doc.id, { score: 0, doc, sources: new Set() });
-        }
-        const entry = rrfScores.get(doc.id);
-        entry.score += score;
-        entry.sources.add("keyword");
-    });
-    // Process semantic results
-    semanticResults.forEach((doc, index) => {
-        const rank = index + 1;
-        const score = 1 / (k + rank);
-        if (!rrfScores.has(doc.id)) {
-            rrfScores.set(doc.id, { score: 0, doc, sources: new Set() });
-        }
-        const entry = rrfScores.get(doc.id);
-        entry.score += score;
-        entry.sources.add("semantic");
-    });
-    // Sort by RRF score
-    const results = Array.from(rrfScores.entries())
-        .map(([id, { score, doc, sources }]) => ({
-        id,
+    const addResults = (docs, source) => {
+        docs.forEach((doc, index) => {
+            const score = 1 / (k + index + 1);
+            if (!rrfScores.has(doc.id)) {
+                rrfScores.set(doc.id, { score: 0, doc, sources: new Set() });
+            }
+            const entry = rrfScores.get(doc.id);
+            entry.score += score;
+            entry.sources.add(source);
+        });
+    };
+    addResults(keywordResults, "keyword");
+    addResults(semanticResults, "semantic");
+    const results = Array.from(rrfScores.values())
+        .map(({ score, doc, sources }) => ({
+        id: doc.id,
         content: doc.content,
         metadata: doc.metadata,
         score,
         rank: 0,
-        source: (sources.size === 2 ? "both" :
-            sources.has("keyword") ? "keyword" : "semantic"),
+        source: (sources.size === 2
+            ? "both"
+            : sources.has("keyword")
+                ? "keyword"
+                : "semantic"),
     }))
         .sort((a, b) => b.score - a.score);
-    results.forEach((result, index) => {
-        result.rank = index + 1;
-    });
+    results.forEach((r, i) => { r.rank = i + 1; });
     return results;
 }
+// ─── HybridSearchService ─────────────────────────────────────────────────────
 class HybridSearchService {
     /**
-     * Keyword search using PostgreSQL Full-Text Search
+     * 4.3 — Keyword search using PostgreSQL Full-Text Search.
+     * Prisma.sql ensures `query` and `kbId` are bound parameters,
+     * never interpolated into the SQL string itself.
      */
     async keywordSearch(query, kbId, limit = 10) {
-        const startTime = Date.now();
+        const start = Date.now();
         try {
-            const results = await prisma.$queryRaw `
-        SELECT 
-          id,
-          content,
-          metadata,
-          ts_rank(content_tsv, plainto_tsquery('english', ${query})) as relevance
-        FROM "knowledge_chunks"
-        WHERE 
-          kb_id = ${kbId}
-          AND content_tsv @@ plainto_tsquery('english', ${query})
-        ORDER BY relevance DESC
-        LIMIT ${limit}
-      `;
-            const duration = Date.now() - startTime;
-            logger_1.logger.info(`🔍 Keyword search: ${duration}ms, ${results.length} results`);
+            // 4.3 — Prisma.sql() wraps the entire statement; all ${...} values
+            //        become bind parameters in the prepared statement.
+            const results = await prisma.$queryRaw(client_1.Prisma.sql `
+          SELECT id,
+                 content,
+                 metadata,
+                 ts_rank(content_tsv, plainto_tsquery('english', ${query})) AS relevance
+          FROM   knowledge_chunks
+          WHERE  kb_id   = ${kbId}
+            AND  content_tsv @@ plainto_tsquery('english', ${query})
+          ORDER  BY relevance DESC
+          LIMIT  ${limit}
+        `);
+            logger_1.logger.info(`Keyword search: ${Date.now() - start}ms, ${results.length} results`);
             return results;
         }
         catch (error) {
@@ -80,25 +77,26 @@ class HybridSearchService {
         }
     }
     /**
-     * Semantic search using pgvector
+     * 4.3 — Semantic search using pgvector.
+     * The embedding string is a bind parameter — no raw string concatenation
+     * ever reaches the SQL engine.
      */
     async semanticSearch(embedding, kbId, limit = 10) {
-        const startTime = Date.now();
+        const start = Date.now();
         try {
+            // Build the pgvector literal as a string, then pass via Prisma.sql bind
             const embeddingStr = `[${embedding.join(",")}]`;
-            const results = await prisma.$queryRaw `
-        SELECT 
-          id,
-          content,
-          metadata,
-          1 - (embedding <=> ${embeddingStr}::vector) as similarity
-        FROM "knowledge_chunks"
-        WHERE kb_id = ${kbId}
-        ORDER BY embedding <=> ${embeddingStr}::vector
-        LIMIT ${limit}
-      `;
-            const duration = Date.now() - startTime;
-            logger_1.logger.info(`🧠 Semantic search: ${duration}ms, ${results.length} results`);
+            const results = await prisma.$queryRaw(client_1.Prisma.sql `
+          SELECT id,
+                 content,
+                 metadata,
+                 1 - (embedding <=> ${embeddingStr}::vector) AS similarity
+          FROM   knowledge_chunks
+          WHERE  kb_id = ${kbId}
+          ORDER  BY embedding <=> ${embeddingStr}::vector
+          LIMIT  ${limit}
+        `);
+            logger_1.logger.info(`Semantic search: ${Date.now() - start}ms, ${results.length} results`);
             return results;
         }
         catch (error) {
@@ -107,48 +105,32 @@ class HybridSearchService {
         }
     }
     /**
-     * Hybrid search with RRF
+     * Hybrid search: keyword + semantic in parallel, fused with RRF.
      */
     async search(query, embedding, kbId, limit = 5) {
+        logger_1.logger.info(`Hybrid search: "${query.substring(0, 60)}" in KB: ${kbId}`);
         const searchLimit = limit * 2;
-        logger_1.logger.info(`🔎 Hybrid search: "${query}" in KB: ${kbId}`);
         const [keywordResults, semanticResults] = await Promise.all([
             this.keywordSearch(query, kbId, searchLimit),
             this.semanticSearch(embedding, kbId, searchLimit),
         ]);
-        const fusedResults = reciprocalRankFusion(keywordResults, semanticResults);
-        const finalResults = fusedResults.slice(0, limit);
+        const fused = reciprocalRankFusion(keywordResults, semanticResults);
+        const final = fused.slice(0, limit);
         logger_1.logger.info({
-            total: finalResults.length,
-            keyword: finalResults.filter(r => r.source === "keyword").length,
-            semantic: finalResults.filter(r => r.source === "semantic").length,
-            both: finalResults.filter(r => r.source === "both").length,
-        }, "✅ Hybrid search completed");
-        return finalResults;
+            total: final.length,
+            keyword: final.filter((r) => r.source === "keyword").length,
+            semantic: final.filter((r) => r.source === "semantic").length,
+            both: final.filter((r) => r.source === "both").length,
+        }, "Hybrid search complete");
+        return final;
     }
-    /**
-     * Detect specific identifiers in query
-     */
     hasSpecificIdentifiers(query) {
-        const patterns = [
-            /\b\d{3,}\b/,
-            /\b[A-Z]{2,}\d+\b/,
-            /order\s+\d+/i,
-            /ticket\s+\d+/i,
-        ];
-        return patterns.some(pattern => pattern.test(query));
+        const patterns = [/\b\d{3,}\b/, /\b[A-Z]{2,}\d+\b/, /order\s+\d+/i, /ticket\s+\d+/i];
+        return patterns.some((p) => p.test(query));
     }
-    /**
-     * Smart search adapts to query type
-     */
     async smartSearch(query, embedding, kbId, limit = 5) {
         const hasIds = this.hasSpecificIdentifiers(query);
-        if (hasIds) {
-            logger_1.logger.info("🎯 Detected specific IDs - boosting keyword search");
-        }
-        else {
-            logger_1.logger.info("💭 Conceptual query - balanced hybrid search");
-        }
+        logger_1.logger.info(hasIds ? "Boosting keyword search (specific IDs detected)" : "Balanced hybrid search");
         return this.search(query, embedding, kbId, limit);
     }
 }

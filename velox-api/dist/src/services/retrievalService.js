@@ -1,42 +1,77 @@
 "use strict";
+// src/services/retrievalService.ts
+//
+// 4.1 — Consolidated to use `knowledge_chunks` (Prisma) exclusively.
+//        The old `document_chunks` table (raw pg Pool) is retired.
+// 4.2 — Similarity threshold raised from 0.3 → 0.7 to cut hallucination noise.
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RetrievalService = void 0;
-const db_1 = require("../db");
+const client_1 = require("@prisma/client");
 const embeddingService_1 = require("./embeddingService");
 const logger_1 = require("../utils/logger");
+const prisma = new client_1.PrismaClient();
+// 4.2 — Minimum cosine similarity to accept a chunk as relevant.
+//        0.3 was far too permissive and returned noisy/unrelated content.
+const SIMILARITY_THRESHOLD = 0.7;
 class RetrievalService {
     constructor() {
         this.embeddingService = new embeddingService_1.EmbeddingService();
     }
-    async search(query, limit = 3) {
+    /**
+     * Semantic similarity search against `knowledge_chunks` via pgvector.
+     *
+     * @param query   - Raw user text (will be embedded before search)
+     * @param kbId    - Optional knowledge-base ID to scope search to one agent's KB
+     * @param limit   - Max chunks to return (default 3)
+     * @returns       - Newline-separated chunk content string, or "" if nothing
+     *                  passes the similarity threshold
+     */
+    async search(query, kbId, limit = 3) {
         try {
-            // 1. Convert the user's question into a Vector
+            // 1. Embed the user's query
             const queryEmbedding = await this.embeddingService.getEmbedding(query);
             if (!queryEmbedding) {
+                logger_1.logger.warn("Embedding generation returned null — skipping RAG");
                 return "";
             }
             const vectorString = `[${queryEmbedding.join(",")}]`;
-            // 2. Run the Similarity Search (Cosine Distance)
-            // Note: We use <=> operator for cosine distance. 
-            // 1 - distance gives us similarity (1.0 is identical, 0.0 is opposite).
-            const sql = `
-        SELECT content, 1 - (embedding <=> $1) as similarity
-        FROM document_chunks
-        WHERE 1 - (embedding <=> $1) > 0.3  -- Threshold: Ignore irrelevant chunks
-        ORDER BY similarity DESC
-        LIMIT $2;
-      `;
-            const { rows } = await db_1.pool.query(sql, [vectorString, limit]);
+            // 2. Cosine-similarity search on knowledge_chunks via Prisma $queryRaw.
+            //    similarity = 1 - (embedding <=> query_vector)   [pgvector cosine distance]
+            //    4.1 — Uses knowledge_chunks, NOT the legacy document_chunks table.
+            //    4.2 — Threshold = 0.7 (was 0.3).
+            let rows;
+            if (kbId) {
+                rows = await prisma.$queryRaw(client_1.Prisma.sql `
+            SELECT content,
+                   1 - (embedding <=> ${vectorString}::vector) AS similarity
+            FROM   knowledge_chunks
+            WHERE  kb_id = ${kbId}
+              AND  1 - (embedding <=> ${vectorString}::vector) > ${SIMILARITY_THRESHOLD}
+            ORDER  BY similarity DESC
+            LIMIT  ${limit}
+          `);
+            }
+            else {
+                // kbId not provided — search all chunks (fallback path)
+                rows = await prisma.$queryRaw(client_1.Prisma.sql `
+            SELECT content,
+                   1 - (embedding <=> ${vectorString}::vector) AS similarity
+            FROM   knowledge_chunks
+            WHERE  1 - (embedding <=> ${vectorString}::vector) > ${SIMILARITY_THRESHOLD}
+            ORDER  BY similarity DESC
+            LIMIT  ${limit}
+          `);
+            }
             if (rows.length === 0) {
-                logger_1.logger.info("❌ No relevant context found in DB.");
+                logger_1.logger.info("No relevant context found (threshold=0.7)");
                 return "";
             }
-            logger_1.logger.info(`✅ Found ${rows.length} relevant chunks. (Top Score: ${rows[0].similarity.toFixed(2)})`);
-            // 3. Combine the chunks into a single text block
+            logger_1.logger.info({ chunks: rows.length, topScore: rows[0].similarity.toFixed(3) }, "RAG context retrieved");
+            // 3. Combine chunks into a single context block for the LLM prompt
             return rows.map((r) => r.content).join("\n---\n");
         }
         catch (error) {
-            logger_1.logger.error({ error }, "Error during vector search");
+            logger_1.logger.error({ error }, "Vector search failed");
             return "";
         }
     }
