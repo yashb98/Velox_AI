@@ -27,7 +27,10 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 
+# Copy source code
 COPY . .
+
+# Build the Vite app
 RUN npm run build
 
 # ── Stage 2: Serve with nginx ─────────────────────────────────────────────────
@@ -68,6 +71,9 @@ server {
     gzip_min_length 256;
 }
 EOF
+
+# Don't run as root (Security Best Practice)
+USER nginx
 
 EXPOSE 80
 
