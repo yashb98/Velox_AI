@@ -1,3 +1,4 @@
+<!-- ⚠️ STALE: Rewrite as voice-pipeline doc with Pipecat architecture -->
 # L5: Model Serving
 
 > Reference layer for inference infrastructure, optimisation, and deployment strategies.

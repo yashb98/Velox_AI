@@ -1,3 +1,4 @@
+<!-- ⚠️ STALE: Rewrite as model-routing doc with T0-T3 strategy -->
 # L6: Application Layer
 
 > Reference layer for API design, orchestration, guardrails, and caching.

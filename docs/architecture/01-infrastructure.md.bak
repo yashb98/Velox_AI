@@ -1,5 +1,3 @@
-<!-- ⚠️ STALE: This doc references GCP. Rewrite for Modal + Railway + Neon + Upstash -->
-<!-- ⚠️ STALE: This doc references GCP. Rewrite for Modal + Railway + Neon + Upstash -->
 # L1: Cloud Infrastructure & Deployment
 
 > Reference layer for all compute, storage, networking, and IaC decisions.

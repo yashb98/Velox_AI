@@ -1,3 +1,4 @@
+<!-- ⚠️ STALE: Replace with voice-optimised 2-tier RAG doc -->
 # 15. Advanced RAG Architecture — 5-Layer Anti-Hallucination System
 
 > **Version**: 2.0 | **Updated**: March 2026

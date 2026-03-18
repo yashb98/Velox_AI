@@ -11,7 +11,7 @@
 | Table Format | Delta Lake | Iceberg | Databricks shop | Vendor-neutral; multi-engine |
 | Feature Store | Feast | Tecton | <50 models; open-source | Enterprise; streaming features |
 | Experiment Track | MLflow | W&B | Self-hosted; integrated registry | Better UX; collaboration |
-| LLM Serving | vLLM | TGI | Max throughput; PagedAttention | HF ecosystem; grammar output |
+| LLM Serving | SGLang | vLLM | Max throughput; RadixAttention; voice workloads | Ecosystem maturity; broader hardware support |
 | Vector DB | Qdrant | Pinecone | Self-hosted; open-source | Fully managed; serverless |
 | LLM Framework | LangGraph | CrewAI | Complex agents; state machines | Quick prototyping; role-based |
 | Streaming | Kafka | Pulsar | Mature; largest ecosystem | Multi-tenancy; geo-replication |

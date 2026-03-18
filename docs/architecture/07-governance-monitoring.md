@@ -1,3 +1,4 @@
+<!-- ⚠️ STALE: Rewrite as observability doc with LangSmith + Prometheus -->
 # L7: Governance, Monitoring & Security
 
 > Reference layer for observability, compliance, security, and operational excellence.
