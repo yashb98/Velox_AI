@@ -54,8 +54,10 @@ const sections: Section[] = [
   ]},
   { id: 'documents', label: 'Company Documents', icon: FileText, subsections: [
     { id: 'docs-what', label: 'What is RAG?' },
+    { id: 'docs-architecture', label: 'RAG architecture' },
     { id: 'docs-upload', label: 'Uploading documents' },
-    { id: 'docs-search', label: 'Hybrid search' },
+    { id: 'docs-processing', label: 'Document processing' },
+    { id: 'docs-search', label: 'Query & retrieval' },
   ]},
   { id: 'playground', label: 'Playground', icon: PlayCircle, subsections: [
     { id: 'pg-features', label: 'Features' },
@@ -391,6 +393,103 @@ RULES
       <DocP>
         <strong className="text-stone-900">Retrieval-Augmented Generation (RAG)</strong> lets your AI agent answer questions using your own documents instead of relying solely on training data. When a caller asks a question, Velox AI searches your document library for relevant content and includes it in the AI's context — resulting in accurate, grounded answers.
       </DocP>
+      <DocP>
+        Unlike fine-tuning (which bakes knowledge into model weights), RAG retrieves information at runtime. This means:
+      </DocP>
+      <ul className="list-disc list-inside text-stone-600 space-y-1 mb-4 ml-2">
+        <li><strong className="text-stone-900">Always up-to-date</strong> — update documents anytime, no retraining needed</li>
+        <li><strong className="text-stone-900">Verifiable</strong> — responses cite source documents</li>
+        <li><strong className="text-stone-900">Cost-effective</strong> — no GPU fine-tuning costs</li>
+        <li><strong className="text-stone-900">Multi-tenant</strong> — each organization has isolated knowledge</li>
+      </ul>
+
+      <DocSub id="docs-architecture">RAG architecture</DocSub>
+      <DocP>
+        Velox AI implements a <strong className="text-stone-900">2-tier RAG system</strong> optimized for voice latency. The architecture separates fast retrieval (for most queries) from complex reasoning (for edge cases).
+      </DocP>
+      <DocBlock lang="text">{`┌─────────────────────────────────────────────────────────────────────────────┐
+│                        VELOX AI RAG ARCHITECTURE                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      INGESTION PIPELINE                              │   │
+│  │                                                                      │   │
+│  │   PDF/TXT/DOCX ──► Chunking ──► Embedding ──► Vector Store          │   │
+│  │        │            (500 tok)   (BGE-M3)      (Qdrant)              │   │
+│  │        │                                         │                   │   │
+│  │        └──► Metadata ──► BM25 Index ─────────────┤                   │   │
+│  │             Extraction   (Keyword)               │                   │   │
+│  │                                                  ▼                   │   │
+│  │                                          PostgreSQL                  │   │
+│  │                                          (chunks + metadata)         │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      QUERY PIPELINE                                  │   │
+│  │                                                                      │   │
+│  │                         User Query                                   │   │
+│  │                              │                                       │   │
+│  │                              ▼                                       │   │
+│  │                    ┌─────────────────┐                               │   │
+│  │                    │  Query Router   │  ← Classifies complexity      │   │
+│  │                    │   (T0 Model)    │    in <30ms                   │   │
+│  │                    └────────┬────────┘                               │   │
+│  │                             │                                        │   │
+│  │              ┌──────────────┴──────────────┐                         │   │
+│  │              ▼                             ▼                         │   │
+│  │   ┌──────────────────┐          ┌──────────────────┐                 │   │
+│  │   │   TIER 1: FAST   │          │  TIER 2: COMPLEX │                 │   │
+│  │   │    (<100ms)      │          │    (<500ms)      │                 │   │
+│  │   ├──────────────────┤          ├──────────────────┤                 │   │
+│  │   │ • Hybrid search  │          │ • HyDE expansion │                 │   │
+│  │   │   (vector+BM25)  │          │ • Multi-query    │                 │   │
+│  │   │ • Cross-encoder  │          │ • Agentic loop   │                 │   │
+│  │   │   reranking      │          │ • Self-RAG       │                 │   │
+│  │   │ • Top-5 chunks   │          │ • GraphRAG       │                 │   │
+│  │   └────────┬─────────┘          └────────┬─────────┘                 │   │
+│  │            │                             │                           │   │
+│  │            └──────────────┬──────────────┘                           │   │
+│  │                           ▼                                          │   │
+│  │                  ┌─────────────────┐                                 │   │
+│  │                  │ Context Window  │  ← Injected into LLM prompt    │   │
+│  │                  │ (system prompt  │                                 │   │
+│  │                  │  + RAG chunks)  │                                 │   │
+│  │                  └─────────────────┘                                 │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘`}</DocBlock>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Tier 1: Fast Retrieval (&lt;100ms)</h4>
+      <DocP>
+        Handles 80-90% of queries. Optimized for voice latency with parallel execution:
+      </DocP>
+      <Table
+        headers={['Component', 'Technology', 'What it does']}
+        rows={[
+          ['Vector Search', 'Qdrant + BGE-M3', 'Semantic similarity search using dense embeddings'],
+          ['Keyword Search', 'BM25 (PostgreSQL)', 'Exact term matching for names, IDs, product codes'],
+          ['Fusion', 'Reciprocal Rank Fusion', 'Merges vector + keyword results with weighted scoring'],
+          ['Reranking', 'Cross-encoder (BGE-reranker)', 'Re-scores top candidates for precision'],
+        ]}
+      />
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Tier 2: Complex Retrieval (&lt;500ms)</h4>
+      <DocP>
+        For multi-hop reasoning, ambiguous queries, and policy questions. Uses LangGraph agentic loop:
+      </DocP>
+      <Table
+        headers={['Technique', 'When used', 'How it works']}
+        rows={[
+          ['HyDE', 'Vague queries', 'Generates hypothetical answer, then searches for similar content'],
+          ['Multi-Query', 'Broad topics', 'Rewrites query into 3-5 variations, merges results'],
+          ['Self-RAG', 'Low confidence', 'LLM decides if retrieval is needed, critiques own answer'],
+          ['Corrective RAG', 'Wrong results', 'Detects irrelevant chunks, triggers re-retrieval'],
+          ['GraphRAG', 'Entity relationships', 'Traverses knowledge graph for connected concepts'],
+        ]}
+      />
+      <Note type="info">
+        The query router uses the T0 model (Qwen3.5-3B) to classify complexity in under 30ms. Simple factual queries go to Tier 1; ambiguous or multi-part queries go to Tier 2.
+      </Note>
 
       <DocSub id="docs-upload">Uploading documents</DocSub>
       <StepList steps={[
@@ -408,21 +507,120 @@ RULES
           desc: 'When creating or editing an agent, select which document collections to use in the Knowledge step.',
         },
       ]} />
-      <Note type="info">
-        Duplicate chunks are automatically detected and skipped. Large documents are split into ~500-token chunks for optimal retrieval.
-      </Note>
 
-      <DocSub id="docs-search">Hybrid search</DocSub>
+      <DocSub id="docs-processing">Document processing pipeline</DocSub>
       <DocP>
-        Velox AI uses <strong className="text-stone-900">2-tier hybrid search</strong> optimized for voice latency:
+        When you upload a document, Velox AI processes it through multiple stages:
       </DocP>
+      <DocBlock lang="text">{`Document Upload Flow:
+
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Upload     │───►│   Parsing    │───►│   Chunking   │───►│  Embedding   │
+│   (API)      │    │              │    │              │    │              │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+                           │                   │                   │
+                           ▼                   ▼                   ▼
+                    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+                    │ • PDF: PyMuPDF│    │ • 500 tokens │    │ • BGE-M3     │
+                    │ • DOCX: python│    │ • 50 overlap │    │ • 1024 dims  │
+                    │   -docx       │    │ • Semantic   │    │ • Batch 32   │
+                    │ • TXT: direct │    │   boundaries │    │              │
+                    └──────────────┘    └──────────────┘    └──────────────┘
+                                                                   │
+                                                                   ▼
+                                               ┌───────────────────────────────┐
+                                               │         Storage               │
+                                               ├───────────────────────────────┤
+                                               │ • Qdrant: vectors + metadata  │
+                                               │ • PostgreSQL: chunks + source │
+                                               │ • BM25 index: keyword search  │
+                                               │ • Deduplication: hash-based   │
+                                               └───────────────────────────────┘`}</DocBlock>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Chunking strategy</h4>
       <Table
-        headers={['Tier', 'Method', 'Latency', 'Use case']}
+        headers={['Parameter', 'Value', 'Why']}
         rows={[
-          ['Fast', 'Qdrant vector + BM25 keyword', '<100ms', 'Most queries — product names, order IDs, FAQs'],
-          ['Complex', 'LangGraph agentic + HyDE', '<500ms', 'Multi-hop reasoning, complex policy questions'],
+          ['Chunk size', '500 tokens', 'Fits in context window, enough for complete thoughts'],
+          ['Overlap', '50 tokens', 'Preserves context at chunk boundaries'],
+          ['Splitter', 'Semantic + recursive', 'Respects paragraph/section boundaries first'],
+          ['Metadata', 'Source, page, section', 'Enables filtering and citation'],
         ]}
       />
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Embedding model</h4>
+      <DocP>
+        Velox AI uses <strong className="text-stone-900">BGE-M3</strong> for embeddings — a multilingual model that supports:
+      </DocP>
+      <ul className="list-disc list-inside text-stone-600 space-y-1 mb-4 ml-2">
+        <li><strong className="text-stone-900">Dense vectors</strong> (1024 dims) — semantic similarity</li>
+        <li><strong className="text-stone-900">Sparse vectors</strong> — lexical matching (like BM25)</li>
+        <li><strong className="text-stone-900">Multi-vector</strong> — ColBERT-style late interaction</li>
+      </ul>
+      <Note type="tip">
+        For production, embeddings are cached. Re-uploading the same document skips embedding — only new chunks are processed.
+      </Note>
+
+      <DocSub id="docs-search">Query & retrieval flow</DocSub>
+      <DocP>
+        When a user asks a question, the retrieval pipeline executes in parallel for speed:
+      </DocP>
+      <DocBlock lang="text">{`Query Execution Flow (Tier 1):
+
+User: "What's the return policy for electronics?"
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │  Query Embed    │  ← Same BGE-M3 model
+                    │    (15ms)       │
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            ▼                ▼                ▼
+   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+   │ Vector Search│  │ BM25 Search  │  │ Metadata     │
+   │   (Qdrant)   │  │ (PostgreSQL) │  │ Filter       │
+   │   Top 20     │  │   Top 20     │  │ (org_id)     │
+   │   (25ms)     │  │   (15ms)     │  │              │
+   └──────┬───────┘  └──────┬───────┘  └──────────────┘
+          │                 │
+          └────────┬────────┘
+                   ▼
+          ┌──────────────┐
+          │    Fusion    │  ← Reciprocal Rank Fusion
+          │   (RRF k=60) │    Merges results
+          │    (5ms)     │
+          └──────┬───────┘
+                 │
+                 ▼
+          ┌──────────────┐
+          │   Reranker   │  ← Cross-encoder rescoring
+          │ (BGE-reranker│    Top 10 → Top 5
+          │    (40ms)    │
+          └──────┬───────┘
+                 │
+                 ▼
+          ┌──────────────┐
+          │  Top 5 Chunks│  ← Injected into LLM context
+          │  + metadata  │
+          └──────────────┘
+
+Total: ~100ms`}</DocBlock>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Retrieval parameters</h4>
+      <Table
+        headers={['Parameter', 'Value', 'Tunable']}
+        rows={[
+          ['Initial candidates', '20 per method', 'Yes — higher = better recall, slower'],
+          ['RRF k constant', '60', 'Yes — higher = more weight to lower ranks'],
+          ['Rerank candidates', '10', 'Yes — cross-encoder is expensive'],
+          ['Final chunks', '5', 'Yes — more = better recall, uses more tokens'],
+          ['Similarity threshold', '0.7', 'Yes — lower = more results, less relevant'],
+        ]}
+      />
+      <Note type="warn">
+        For voice agents, we default to aggressive filtering (threshold 0.7, top 5 chunks) to minimize latency. For chat/text agents, you can increase these values.
+      </Note>
 
       {/* ── PLAYGROUND ───────────────────────────────────────────────────────── */}
       <DocHeading id="playground">
