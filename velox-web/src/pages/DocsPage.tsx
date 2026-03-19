@@ -58,6 +58,7 @@ const sections: Section[] = [
     { id: 'docs-upload', label: 'Uploading documents' },
     { id: 'docs-processing', label: 'Document processing' },
     { id: 'docs-search', label: 'Query & retrieval' },
+    { id: 'docs-guardrails', label: 'Anti-hallucination' },
   ]},
   { id: 'playground', label: 'Playground', icon: PlayCircle, subsections: [
     { id: 'pg-features', label: 'Features' },
@@ -621,6 +622,126 @@ Total: ~100ms`}</DocBlock>
       <Note type="warn">
         For voice agents, we default to aggressive filtering (threshold 0.7, top 5 chunks) to minimize latency. For chat/text agents, you can increase these values.
       </Note>
+
+      <DocSub id="docs-guardrails">Anti-hallucination guardrails</DocSub>
+      <DocP>
+        Velox AI implements a <strong className="text-stone-900">5-layer defense</strong> against hallucinations, targeting &lt;3% hallucination rate on in-domain queries.
+      </DocP>
+      <DocBlock lang="text">{`┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ANTI-HALLUCINATION GUARDRAILS                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  User Query                                                                 │
+│      │                                                                      │
+│      ▼                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  LAYER 1: Query Abstention Classifier  (<30ms)                      │   │
+│  │  ─────────────────────────────────────                              │   │
+│  │  • Detects unanswerable queries (predictions, opinions)             │   │
+│  │  • Catches ambiguous queries needing clarification                  │   │
+│  │  • Identifies out-of-domain requests                                │   │
+│  │                                                                      │   │
+│  │  → If triggered: Returns "I can't answer that" BEFORE calling LLM   │   │
+│  └────────────────────────────────────┬────────────────────────────────┘   │
+│                                       │ PASS                               │
+│                                       ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  LAYER 2: Retrieval Confidence Gate  (<5ms)                         │   │
+│  │  ───────────────────────────────────                                │   │
+│  │  • Checks best chunk score ≥ 0.65 threshold                         │   │
+│  │  • Requires ≥2 supporting chunks above threshold                    │   │
+│  │  • Validates average score isn't too low                            │   │
+│  │                                                                      │   │
+│  │  → If triggered: Abstains rather than hallucinating from weak data  │   │
+│  └────────────────────────────────────┬────────────────────────────────┘   │
+│                                       │ PASS                               │
+│                                       ▼                                    │
+│                              ┌─────────────────┐                           │
+│                              │   LLM GENERATES │                           │
+│                              │    RESPONSE     │                           │
+│                              └────────┬────────┘                           │
+│                                       │                                    │
+│                                       ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  LAYER 3: Citation Enforcement  (+50ms, optional)                   │   │
+│  │  ────────────────────────────────                                   │   │
+│  │  • Splits response into claims                                      │   │
+│  │  • Checks each claim against retrieved chunks via NLI               │   │
+│  │  • Marks unsupported claims                                         │   │
+│  │                                                                      │   │
+│  │  → If >50% claims unsupported: Triggers abstention                  │   │
+│  └────────────────────────────────────┬────────────────────────────────┘   │
+│                                       │                                    │
+│                                       ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  LAYER 4: Semantic Entropy Probe  (+200ms, optional)                │   │
+│  │  ────────────────────────────────                                   │   │
+│  │  • Generates 3 samples at different temperatures                    │   │
+│  │  • Measures response variability                                    │   │
+│  │  • High entropy = model is uncertain = likely hallucinating         │   │
+│  │                                                                      │   │
+│  │  → If entropy > 0.7: Abstains with low-confidence message           │   │
+│  └────────────────────────────────────┬────────────────────────────────┘   │
+│                                       │                                    │
+│                                       ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  LAYER 5: Calibrated Abstention                                     │   │
+│  │  ───────────────────────────────                                    │   │
+│  │  • Combines: confidence + verification_ratio + entropy              │   │
+│  │  • If 2+ signals fail → abstain                                     │   │
+│  │  • Returns voice-friendly abstention message                        │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│                              Response to User                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘`}</DocBlock>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Guardrail thresholds</h4>
+      <Table
+        headers={['Guardrail', 'Threshold', 'Latency', 'Default']}
+        rows={[
+          ['Retrieval Confidence', 'Best chunk ≥ 0.65', '<5ms', 'Enabled'],
+          ['Min Supporting Chunks', '≥2 chunks above threshold', '<1ms', 'Enabled'],
+          ['Citation Entailment', '≥70% claims supported', '+50ms', 'Disabled (latency)'],
+          ['Semantic Entropy', 'Entropy < 0.7', '+200ms', 'Disabled (latency)'],
+          ['Combined Abstention', '2+ signals fail', '<1ms', 'Enabled'],
+        ]}
+      />
+      <Note type="tip">
+        For voice agents, only Layers 1-2 are enabled by default to maintain &lt;800ms latency. Enable citation checking for higher accuracy at the cost of +50ms latency.
+      </Note>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Voice-friendly abstention messages</h4>
+      <DocP>
+        When guardrails trigger, the agent responds with natural, helpful messages:
+      </DocP>
+      <Table
+        headers={['Scenario', 'Response']}
+        rows={[
+          ['No retrieval results', '"I don\'t have that information in my knowledge base. Would you like me to transfer you to someone who can help?"'],
+          ['Low confidence chunks', '"I\'m not confident I have accurate information about that. Let me connect you with someone who can give you a definite answer."'],
+          ['Out-of-scope query', '"That\'s outside what I can help with. Would you like me to transfer you to a specialist?"'],
+          ['Ambiguous query', '"I want to make sure I help you correctly. Could you tell me a bit more about what you\'re looking for?"'],
+        ]}
+      />
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Configuration</h4>
+      <DocP>
+        Control guardrails via environment variables:
+      </DocP>
+      <DocBlock lang="env">{`# Enable/disable guardrails globally
+ENABLE_GUARDRAILS=true
+
+# Retrieval confidence gate
+ENABLE_RETRIEVAL_GATE=true
+RETRIEVAL_CONFIDENCE_THRESHOLD=0.65
+MIN_SUPPORTING_CHUNKS=2
+
+# Citation enforcement (adds ~50ms latency)
+ENABLE_CITATION_CHECK=false
+
+# Semantic entropy (adds ~200ms latency)
+ENTROPY_THRESHOLD=0.7`}</DocBlock>
 
       {/* ── PLAYGROUND ───────────────────────────────────────────────────────── */}
       <DocHeading id="playground">
