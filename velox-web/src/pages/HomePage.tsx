@@ -64,9 +64,9 @@ const features = [
     icon: Bot,
     title: 'Visual Flow Builder',
     description: 'Design conversation flows with our no-code drag-and-drop interface. Map intents, conditions, and tool calls without writing a single line of code.',
-    gradient: 'from-blue-500/20 to-blue-600/5',
-    iconColor: 'text-blue-400',
-    border: 'border-blue-500/20 hover:border-blue-400/50',
+    gradient: 'from-amber-500/20 to-amber-600/5',
+    iconColor: 'text-amber-600',
+    border: 'border-amber-500/20 hover:border-amber-400/50',
   },
   {
     icon: Zap,
@@ -115,8 +115,8 @@ const useCases = [
     icon: Headphones,
     title: 'Customer Support',
     description: 'Handle FAQs, order status, returns, and escalations 24/7 — with zero wait time.',
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10 border-blue-500/20',
+    color: 'text-amber-600',
+    bg: 'bg-amber-500/10 border-amber-500/20',
   },
   {
     icon: CalendarCheck,
@@ -166,7 +166,7 @@ const steps = [
 ]
 
 const stats = [
-  { icon: Users,      label: 'Active Users',  rawValue: 10000, display: '10K+',  color: 'text-blue-400'    },
+  { icon: Users,      label: 'Active Users',  rawValue: 10000, display: '10K+',  color: 'text-amber-600'    },
   { icon: PhoneCall,  label: 'Calls Handled', rawValue: 1000000, display: '1M+', color: 'text-emerald-400' },
   { icon: Clock,      label: 'Avg Response',  rawValue: null,  display: '< 2 s', color: 'text-amber-400'   },
   { icon: TrendingUp, label: 'Uptime',        rawValue: null,  display: '99.9%', color: 'text-violet-400'  },
@@ -204,7 +204,7 @@ const testimonials = [
 
 const models = [
   { model: 'Phi-3-mini SLM', tag: 'Fast',      desc: 'FAQs, yes/no, short answers — runs locally', border: 'border-emerald-500/40 bg-emerald-500/5', badge: 'bg-emerald-500/20 text-emerald-300' },
-  { model: 'Gemini Flash',   tag: 'Balanced',   desc: 'Multi-turn, tool calling, reasoning',         border: 'border-blue-500/40 bg-blue-500/5',     badge: 'bg-blue-500/20 text-blue-300'     },
+  { model: 'Gemini Flash',   tag: 'Balanced',   desc: 'Multi-turn, tool calling, reasoning',         border: 'border-amber-500/40 bg-amber-500/5',     badge: 'bg-amber-500/20 text-amber-700'     },
   { model: 'Gemini Pro',     tag: 'Powerful',   desc: 'Complex decisions, escalations',              border: 'border-violet-500/40 bg-violet-500/5', badge: 'bg-violet-500/20 text-violet-300' },
 ]
 
@@ -244,10 +244,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center group-hover:shadow-[0_0_14px_rgba(59,130,246,0.6)] transition-shadow duration-300">
+            <div className="h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center group-hover:shadow-[0_0_14px_rgba(59,130,246,0.6)] transition-shadow duration-300">
               <Zap className="h-4.5 w-4.5 text-white" />
             </div>
-            <span className={`text-xl font-bold group-hover:text-blue-400 transition-colors ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            <span className={`text-xl font-bold group-hover:text-amber-600 transition-colors ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               Velox AI
             </span>
           </Link>
@@ -276,7 +276,7 @@ export default function HomePage() {
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            <Button size="sm" asChild className="ml-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow-md shadow-blue-600/20">
+            <Button size="sm" asChild className="ml-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold shadow-md shadow-amber-600/20">
               <Link to="/dashboard">Get Started Free</Link>
             </Button>
           </div>
@@ -290,7 +290,7 @@ export default function HomePage() {
           <motion.div
             animate={{ scale: [1, 1.08, 1], opacity: [0.08, 0.14, 0.08] }}
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -top-40 left-1/2 -translate-x-1/2 h-[700px] w-[1000px] rounded-full bg-blue-600/10 blur-3xl"
+            className="absolute -top-40 left-1/2 -translate-x-1/2 h-[700px] w-[1000px] rounded-full bg-amber-600/10 blur-3xl"
           />
           <div className="absolute top-40 left-1/4 h-64 w-64 rounded-full bg-violet-600/10 blur-2xl" />
           <div className="absolute top-20 right-1/4 h-64 w-64 rounded-full bg-emerald-600/10 blur-2xl" />
@@ -304,7 +304,7 @@ export default function HomePage() {
             className="max-w-4xl mx-auto text-center space-y-8"
           >
             <motion.div variants={fadeInUp}>
-              <Badge className="bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600/30 px-4 py-1.5 text-sm">
+              <Badge className="bg-amber-600/20 text-amber-700 border-amber-500/30 hover:bg-amber-600/30 px-4 py-1.5 text-sm">
                 <Sparkles className="h-3.5 w-3.5 mr-2" />
                 Powered by Gemini 2.5 Flash · Deepgram Nova-2 · Google ADK
               </Badge>
@@ -312,7 +312,7 @@ export default function HomePage() {
 
             <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
               <span className={darkMode ? 'text-white' : 'text-slate-900'}>Build AI Voice Agents</span>
-              <span className="block bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400 bg-clip-text text-transparent mt-2">
+              <span className="block bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent mt-2">
                 In Minutes, Not Months
               </span>
             </motion.h1>
@@ -323,7 +323,7 @@ export default function HomePage() {
             </motion.p>
 
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 justify-center">
-              <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-500 text-white text-base px-8 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 transition-shadow">
+              <Button size="lg" asChild className="bg-amber-600 hover:bg-amber-500 text-white text-base px-8 shadow-lg shadow-amber-600/25 hover:shadow-amber-600/40 transition-shadow">
                 <Link to="/dashboard">
                   Start Building Free
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -433,9 +433,9 @@ export default function HomePage() {
           >
             {audiences.map(({ icon: Icon, title, desc }) => (
               <motion.div key={title} variants={scaleIn}
-                className={`p-6 rounded-2xl border ${card} hover:border-blue-500/40 transition-colors group`}>
-                <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
-                  <Icon className="h-6 w-6 text-blue-400" />
+                className={`p-6 rounded-2xl border ${card} hover:border-amber-500/40 transition-colors group`}>
+                <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4 group-hover:bg-amber-500/20 transition-colors">
+                  <Icon className="h-6 w-6 text-amber-600" />
                 </div>
                 <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
                 <p className={`text-sm ${subText} leading-relaxed`}>{desc}</p>
@@ -538,11 +538,11 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 variants={i % 2 === 0 ? slideInLeft : slideInRight}
               >
-                <div className={`p-8 rounded-2xl border ${card} hover:border-blue-500/30 transition-colors`}>
+                <div className={`p-8 rounded-2xl border ${card} hover:border-amber-500/30 transition-colors`}>
                   <div className="flex items-start gap-6">
                     <div className="text-5xl shrink-0">{item.emoji}</div>
                     <div className="flex-1">
-                      <div className="text-xs font-mono text-blue-400 mb-2 tracking-widest uppercase">Step {item.step}</div>
+                      <div className="text-xs font-mono text-amber-600 mb-2 tracking-widest uppercase">Step {item.step}</div>
                       <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{item.title}</h3>
                       <p className={`${subText} leading-relaxed`}>{item.description}</p>
                     </div>
@@ -699,8 +699,8 @@ export default function HomePage() {
             viewport={{ once: true }}
             variants={fadeInUp}
           >
-            <div className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/20 via-slate-900 to-violet-600/10 p-14 text-center">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent" />
+            <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-600/20 via-stone-100 to-orange-50 p-14 text-center">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-600/5 to-transparent" />
               <h2 className="relative text-4xl font-bold text-white mb-4">
                 Ready to Transform Your Customer Experience?
               </h2>
@@ -708,7 +708,7 @@ export default function HomePage() {
                 Join thousands of companies using Velox AI to handle millions of conversations — 24/7, at a fraction of the cost.
               </p>
               <div className="relative flex flex-wrap gap-4 justify-center">
-                <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-500 text-white px-8 shadow-lg shadow-blue-600/30 text-base hover:shadow-blue-600/50 transition-shadow">
+                <Button size="lg" asChild className="bg-amber-600 hover:bg-amber-500 text-white px-8 shadow-lg shadow-amber-600/30 text-base hover:shadow-amber-600/50 transition-shadow">
                   <Link to="/dashboard">
                     Start Free Trial
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -730,7 +730,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                <div className="h-7 w-7 rounded-lg bg-amber-600 flex items-center justify-center">
                   <Zap className="h-3.5 w-3.5 text-white" />
                 </div>
                 <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Velox AI</span>
@@ -743,7 +743,7 @@ export default function HomePage() {
               <h4 className={`font-semibold mb-4 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>Product</h4>
               <ul className="space-y-2 text-sm">
                 {[['Documentation', '/docs'], ['API Reference', '/docs#api'], ['Pricing', '/billing']].map(([l, to]) => (
-                  <li key={l}><Link to={to} className={`${subText} hover:text-blue-400 transition-colors`}>{l}</Link></li>
+                  <li key={l}><Link to={to} className={`${subText} hover:text-amber-600 transition-colors`}>{l}</Link></li>
                 ))}
               </ul>
             </div>
@@ -751,7 +751,7 @@ export default function HomePage() {
               <h4 className={`font-semibold mb-4 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>Platform</h4>
               <ul className="space-y-2 text-sm">
                 {[['Agents', '/agents'], ['Knowledge Base', '/knowledge'], ['Call History', '/calls'], ['Dashboard', '/dashboard']].map(([l, to]) => (
-                  <li key={l}><Link to={to} className={`${subText} hover:text-blue-400 transition-colors`}>{l}</Link></li>
+                  <li key={l}><Link to={to} className={`${subText} hover:text-amber-600 transition-colors`}>{l}</Link></li>
                 ))}
               </ul>
             </div>
@@ -759,7 +759,7 @@ export default function HomePage() {
               <h4 className={`font-semibold mb-4 ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>Legal</h4>
               <ul className="space-y-2 text-sm">
                 {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Security', '/security']].map(([l, to]) => (
-                  <li key={l}><Link to={to} className={`${subText} hover:text-blue-400 transition-colors`}>{l}</Link></li>
+                  <li key={l}><Link to={to} className={`${subText} hover:text-amber-600 transition-colors`}>{l}</Link></li>
                 ))}
               </ul>
             </div>

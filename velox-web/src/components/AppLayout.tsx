@@ -58,13 +58,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className={`flex items-center gap-2.5 px-4 py-5 border-b border-slate-800 ${collapsed && !mobile ? 'justify-center px-0' : ''}`}>
+        <div className={`flex items-center gap-2.5 px-4 py-5 border-b border-stone-200 ${collapsed && !mobile ? 'justify-center px-0' : ''}`}>
           <Link
             to="/"
             className="flex items-center gap-2.5 group"
             title="Velox AI — Home"
           >
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 group-hover:shadow-[0_0_12px_rgba(59,130,246,0.6)] transition-shadow duration-300">
+            <div className="h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center shrink-0 group-hover:shadow-[0_0_12px_rgba(217,119,6,0.5)] transition-shadow duration-300">
               <Zap className="h-4 w-4 text-white" />
             </div>
             <AnimatePresence>
@@ -74,7 +74,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="text-base font-bold text-white whitespace-nowrap overflow-hidden group-hover:text-blue-400 transition-colors"
+                  className="text-base font-bold text-stone-900 whitespace-nowrap overflow-hidden group-hover:text-amber-700 transition-colors"
                 >
                   Velox AI
                 </motion.span>
@@ -95,12 +95,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                   ${active
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent'}
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-transparent'}
                   ${collapsed && !mobile ? 'justify-center px-0' : ''}
                 `}
               >
-                <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-400' : ''}`} />
+                <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-amber-700' : ''}`} />
                 <AnimatePresence>
                   {(!collapsed || mobile) && (
                     <motion.span
@@ -120,13 +120,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Bottom links */}
-        <div className="py-3 px-2 border-t border-slate-800 space-y-0.5">
+        <div className="py-3 px-2 border-t border-stone-200 space-y-0.5">
           {BOTTOM_ITEMS.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               title={collapsed && !mobile ? label : undefined}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-all ${collapsed && !mobile ? 'justify-center px-0' : ''}`}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition-all ${collapsed && !mobile ? 'justify-center px-0' : ''}`}
             >
               <Icon className="h-4 w-4 shrink-0" />
               <AnimatePresence>
@@ -149,7 +149,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {!mobile && (
             <button
               onClick={() => setCollapsed((c) => !c)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 transition-all ${collapsed ? 'justify-center px-0' : ''}`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition-all ${collapsed ? 'justify-center px-0' : ''}`}
               title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {collapsed ? (
@@ -168,12 +168,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden">
+    <div className="flex h-screen bg-[#faf9f7] overflow-hidden">
       {/* ── Desktop sidebar ──────────────────────────────────────────────────── */}
       <motion.aside
         animate={{ width: collapsed ? 60 : 220 }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="hidden md:flex flex-col border-r border-slate-800 bg-slate-900/50 shrink-0 overflow-hidden"
+        className="hidden md:flex flex-col border-r border-stone-200 bg-white shrink-0 overflow-hidden"
       >
         <SidebarContent />
       </motion.aside>
@@ -188,7 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 md:hidden"
+              className="fixed inset-0 z-40 bg-black/40 md:hidden"
             />
             {/* Drawer */}
             <motion.aside
@@ -196,7 +196,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 flex flex-col md:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-stone-200 flex flex-col md:hidden"
             >
               <SidebarContent mobile />
             </motion.aside>
@@ -207,19 +207,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* ── Main content area ────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile topbar with hamburger */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-slate-800 bg-slate-950/95 backdrop-blur shrink-0">
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-stone-200 bg-white/90 backdrop-blur-sm shrink-0">
           <button
             onClick={() => setMobileOpen(true)}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-stone-500 hover:text-stone-900 transition-colors"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="h-6 w-6 rounded bg-blue-600 flex items-center justify-center group-hover:shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-shadow">
+            <div className="h-6 w-6 rounded bg-amber-600 flex items-center justify-center group-hover:shadow-[0_0_8px_rgba(217,119,6,0.4)] transition-shadow">
               <Zap className="h-3 w-3 text-white" />
             </div>
-            <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Velox AI</span>
+            <span className="text-sm font-bold text-stone-900 group-hover:text-amber-700 transition-colors">Velox AI</span>
           </Link>
         </div>
 

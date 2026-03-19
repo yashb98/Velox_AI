@@ -8,8 +8,19 @@ import { Badge } from '@/components/ui/badge'
 import { Check, Loader2, TrendingUp, TrendingDown, CreditCard, DollarSign, Clock, Zap, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Link } from 'react-router-dom'
-import { useOrganization } from '@clerk/clerk-react'
 import api from '@/lib/api'
+import { isAuthEnabled } from '@/auth'
+
+// Conditionally use Clerk hook
+const useOrgId = () => {
+  if (!isAuthEnabled) {
+    return 'dev-org-id'
+  }
+  // Only import and use Clerk when auth is enabled
+  const { useOrganization } = require('@clerk/clerk-react')
+  const { organization } = useOrganization()
+  return organization?.id ?? 'dev-org-id'
+}
 
 // Animation variants
 const fadeInUp = {
@@ -112,9 +123,7 @@ export default function Billing() {
   const [loading, setLoading] = useState(false)
   const [billingInfo, setBillingInfo] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
-  // 5.6 — Replaced hardcoded 'test-org-id' with live Clerk org ID
-  const { organization } = useOrganization()
-  const orgId = organization?.id ?? ''
+  const orgId = useOrgId()
 
   useEffect(() => {
     loadBillingInfo()
@@ -175,17 +184,17 @@ export default function Billing() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-[#faf9f7] text-stone-900">
       {/* Header with back button */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur"
+        className="border-b border-stone-200 bg-white/80 backdrop-blur-sm"
       >
         <div className="container mx-auto px-4 py-4">
           <Button variant="ghost" size="sm" asChild
-            className="text-slate-300 hover:text-white hover:bg-slate-800">
+            className="text-stone-600 hover:text-stone-900 hover:bg-stone-100">
             <Link to="/" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Home
@@ -203,10 +212,10 @@ export default function Billing() {
         >
           {/* Hero Section */}
           <motion.div variants={fadeInUp} className="text-center space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-amber-600 via-orange-500 to-red-500 bg-clip-text text-transparent">
               Choose Your Plan
             </h1>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+            <p className="text-xl text-stone-500 max-w-2xl mx-auto">
               Flexible pricing that scales with your business. Start free, upgrade anytime.
             </p>
           </motion.div>
@@ -395,9 +404,9 @@ export default function Billing() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="text-center py-12"
                   >
-                    <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <p className="text-muted-foreground">No transactions yet</p>
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <CreditCard className="h-12 w-12 mx-auto mb-4 text-stone-400" />
+                    <p className="text-stone-600">No transactions yet</p>
+                    <p className="text-sm text-stone-500 mt-2">
                       Your transaction history will appear here
                     </p>
                   </motion.div>
@@ -414,7 +423,7 @@ export default function Billing() {
                         variants={slideInRight}
                         custom={index}
                         whileHover={{ scale: 1.02 }}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
+                        className="flex items-center justify-between p-4 border border-stone-200 rounded-xl bg-white hover:shadow-md hover:border-stone-300 transition-all duration-200"
                       >
                         <div className="flex items-center gap-4">
                           <motion.div
@@ -422,12 +431,12 @@ export default function Billing() {
                             transition={{ duration: 0.5 }}
                           >
                             {transaction.type === 'CREDIT' ? (
-                              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                              <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                                <TrendingUp className="h-6 w-6 text-emerald-600" />
                               </div>
                             ) : (
-                              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                                <TrendingDown className="h-6 w-6 text-red-600 dark:text-red-400" />
+                              <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
+                                <TrendingDown className="h-6 w-6 text-amber-700" />
                               </div>
                             )}
                           </motion.div>
@@ -444,14 +453,14 @@ export default function Billing() {
                           <p
                             className={`text-lg font-bold ${
                               transaction.type === 'CREDIT'
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
+                                ? 'text-emerald-600'
+                                : 'text-amber-700'
                             }`}
                           >
                             {transaction.type === 'CREDIT' ? '+' : '-'}
                             {formatMinutes(transaction.amount)}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-stone-500">
                             Balance: {formatMinutes(transaction.balance_after)}
                           </p>
                         </div>
@@ -466,12 +475,12 @@ export default function Billing() {
           {/* Cancel Subscription */}
           {billingInfo?.subscription && (
             <motion.div variants={fadeInUp}>
-              <Card className="border-2 border-destructive/50 bg-destructive/5">
+              <Card className="border-2 border-red-200 bg-red-50/50">
                 <CardHeader>
-                  <CardTitle className="text-destructive flex items-center gap-2">
-                    ⚠️ Danger Zone
+                  <CardTitle className="text-red-700 flex items-center gap-2">
+                    Danger Zone
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-red-600/80">
                     Once you cancel, you'll lose access to all premium features at the end of your billing period
                   </CardDescription>
                 </CardHeader>

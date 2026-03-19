@@ -90,7 +90,7 @@ function buildWeeklyChart(conversations: Conversation[]) {
   return days.map(d => ({ day: d, calls: buckets[d] }))
 }
 
-const PIE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
+const PIE_COLORS = ['#059669', '#d97706', '#dc2626', '#78716c']
 
 // ── Animation ─────────────────────────────────────────────────────────────────
 const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.4 } }) }
@@ -172,13 +172,13 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-    <div className="min-h-full bg-slate-950">
+    <div className="min-h-full bg-[#faf9f7]">
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10">
+      <div className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-white">Dashboard</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h1 className="text-xl font-semibold text-stone-900">Dashboard</h1>
+            <p className="text-xs text-stone-500 mt-0.5">
               {isLoading ? 'Loading…' : `${total} total conversations · refreshes every 30s`}
             </p>
           </div>
@@ -189,20 +189,20 @@ export default function Dashboard() {
               size="sm"
               variant="outline"
               onClick={() => setShowTutorial(true)}
-              className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:border-amber-400 hover:text-amber-200"
+              className="border-amber-500/40 text-amber-700 hover:bg-amber-50 hover:border-amber-500 hover:text-amber-800"
             >
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
               Start Tutorial
             </Button>
             <Button size="sm" variant="ghost"
-              className="text-slate-300 hover:text-white hover:bg-slate-800"
+              className="text-stone-600 hover:text-stone-900 hover:bg-stone-100"
               asChild>
               <Link to="/agents">
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 New Agent
               </Link>
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-500 text-white" asChild>
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-500 text-white" asChild>
               <Link to="/playground">
                 <Play className="h-3.5 w-3.5 mr-1.5" />
                 Playground
@@ -215,7 +215,7 @@ export default function Dashboard() {
       <div className="px-6 py-8 space-y-8">
         {/* Error banner */}
         {errConvs && (
-          <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400 flex items-center gap-2">
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
             <XCircle className="h-4 w-4 shrink-0" />
             Failed to load dashboard data. Check your API connection.
           </div>
@@ -232,46 +232,46 @@ export default function Dashboard() {
               label: 'Total Agents',
               value: isLoading ? null : totalAgents,
               sub: `${activeAgents} active`,
-              icon: <Bot className="h-5 w-5 text-blue-400" />,
-              accent: 'border-blue-500/20',
+              icon: <Bot className="h-5 w-5 text-amber-600" />,
+              accent: 'border-amber-200 bg-amber-50/50',
             },
             {
               label: 'Active Calls',
               value: isLoading ? null : active,
               sub: 'Right now',
-              icon: <PhoneCall className="h-5 w-5 text-emerald-400" />,
-              accent: active > 0 ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-800',
+              icon: <PhoneCall className="h-5 w-5 text-emerald-600" />,
+              accent: active > 0 ? 'border-emerald-300 bg-emerald-50' : 'border-stone-200',
             },
             {
               label: "Today's Calls",
               value: isLoading ? null : todayCalls,
               sub: 'Last 24 hours',
-              icon: <Phone className="h-5 w-5 text-violet-400" />,
-              accent: 'border-slate-800',
+              icon: <Phone className="h-5 w-5 text-stone-600" />,
+              accent: 'border-stone-200',
             },
             {
               label: 'Success Rate',
               value: isLoading ? null : (successRate !== null ? `${successRate}%` : '—'),
               sub: `${completed} completed · ${failed} failed`,
-              icon: <TrendingUp className="h-5 w-5 text-amber-400" />,
-              accent: 'border-slate-800',
+              icon: <TrendingUp className="h-5 w-5 text-amber-600" />,
+              accent: 'border-stone-200',
             },
           ].map((stat, i) => (
             <motion.div key={stat.label} custom={i} variants={fadeUp}>
-              <Card className={`bg-slate-900 ${stat.accent} transition-colors h-full`}>
+              <Card className={`bg-white ${stat.accent} transition-colors h-full`}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardDescription className="text-slate-400 text-xs">{stat.label}</CardDescription>
+                    <CardDescription className="text-stone-500 text-xs">{stat.label}</CardDescription>
                     {stat.icon}
                   </div>
                 </CardHeader>
                 <CardContent>
                   {stat.value === null ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+                    <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
                   ) : (
-                    <p className="text-3xl font-bold text-white">{stat.value}</p>
+                    <p className="text-3xl font-bold text-stone-900">{stat.value}</p>
                   )}
-                  <p className="text-xs text-slate-500 mt-1">{stat.sub}</p>
+                  <p className="text-xs text-stone-500 mt-1">{stat.sub}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -288,36 +288,36 @@ export default function Dashboard() {
             {
               label: 'Avg Call Duration',
               value: isLoading ? null : avgDurationLabel,
-              icon: <Clock className="h-4 w-4 text-slate-400" />,
+              icon: <Clock className="h-4 w-4 text-stone-500" />,
             },
             {
               label: 'Completed Calls',
               value: isLoading ? null : completed,
-              icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
+              icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
             },
             {
               label: 'Failed / Abandoned',
               value: isLoading ? null : failed,
-              icon: <XCircle className="h-4 w-4 text-red-400" />,
+              icon: <XCircle className="h-4 w-4 text-red-500" />,
             },
             {
               label: 'Total Messages',
               value: isLoading ? null : conversations.reduce((s, c) => s + c._count.messages, 0),
-              icon: <Users className="h-4 w-4 text-blue-400" />,
+              icon: <Users className="h-4 w-4 text-amber-600" />,
             },
           ].map((s, i) => (
             <motion.div key={s.label} custom={i + 4} variants={fadeUp}>
-              <Card className="bg-slate-900 border-slate-800 py-3">
+              <Card className="bg-white border-stone-200 py-3">
                 <CardContent className="pt-0 pb-0 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
+                  <div className="h-8 w-8 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
                     {s.icon}
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">{s.label}</p>
+                    <p className="text-xs text-stone-500">{s.label}</p>
                     {s.value === null ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-slate-600 mt-0.5" />
+                      <Loader2 className="h-4 w-4 animate-spin text-stone-400 mt-0.5" />
                     ) : (
-                      <p className="text-lg font-semibold text-white">{s.value}</p>
+                      <p className="text-lg font-semibold text-stone-900">{s.value}</p>
                     )}
                   </div>
                 </CardContent>
@@ -335,15 +335,15 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-slate-900 border-slate-800 h-full">
+            <Card className="bg-white border-stone-200 h-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-white text-sm">
-                      <BarChart3 className="h-4 w-4 text-blue-400" />
+                    <CardTitle className="flex items-center gap-2 text-stone-900 text-sm">
+                      <BarChart3 className="h-4 w-4 text-amber-600" />
                       Call Volume
                     </CardTitle>
-                    <CardDescription className="text-slate-500 text-xs">Today — calls per hour</CardDescription>
+                    <CardDescription className="text-stone-500 text-xs">Today — calls per hour</CardDescription>
                   </div>
                   {/* Range filter */}
                   <div className="flex gap-1">
@@ -353,8 +353,8 @@ export default function Dashboard() {
                         onClick={() => setRange(r)}
                         className={`text-xs px-2 py-1 rounded-md transition-colors ${
                           range === r
-                            ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40'
-                            : 'text-slate-500 hover:text-slate-300'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            : 'text-stone-500 hover:text-stone-700 hover:bg-stone-100'
                         }`}
                       >
                         {r === 'today' ? 'Today' : r === 'week' ? 'Week' : 'All'}
@@ -366,29 +366,29 @@ export default function Dashboard() {
               <CardContent>
                 {isLoading ? (
                   <div className="h-48 flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+                    <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
                     {range === 'week' ? (
                       <LineChart data={weeklyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#64748b' }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#78716c' }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#78716c' }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9' }}
+                          contentStyle={{ backgroundColor: '#fff', border: '1px solid #e7e5e4', borderRadius: '8px', color: '#1f1f1f' }}
                         />
-                        <Line dataKey="calls" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3 }} />
+                        <Line dataKey="calls" stroke="#d97706" strokeWidth={2} dot={{ fill: '#d97706', r: 3 }} />
                       </LineChart>
                     ) : (
                       <BarChart data={hourlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                        <XAxis dataKey="hour" tick={{ fontSize: 9, fill: '#64748b' }} interval={3} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                        <XAxis dataKey="hour" tick={{ fontSize: 9, fill: '#78716c' }} interval={3} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#78716c' }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9' }}
+                          contentStyle={{ backgroundColor: '#fff', border: '1px solid #e7e5e4', borderRadius: '8px', color: '#1f1f1f' }}
                         />
-                        <Bar dataKey="calls" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="calls" fill="#d97706" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     )}
                   </ResponsiveContainer>
@@ -403,21 +403,21 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="bg-slate-900 border-slate-800 h-full">
+            <Card className="bg-white border-stone-200 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white text-sm">
-                  <Activity className="h-4 w-4 text-violet-400" />
+                <CardTitle className="flex items-center gap-2 text-stone-900 text-sm">
+                  <Activity className="h-4 w-4 text-amber-600" />
                   Status Breakdown
                 </CardTitle>
-                <CardDescription className="text-slate-500 text-xs">All-time call outcomes</CardDescription>
+                <CardDescription className="text-stone-500 text-xs">All-time call outcomes</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
                   <div className="h-48 flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+                    <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
                   </div>
                 ) : statusPie.length === 0 ? (
-                  <div className="h-48 flex items-center justify-center text-slate-600 text-sm">
+                  <div className="h-48 flex items-center justify-center text-stone-500 text-sm">
                     No data yet
                   </div>
                 ) : (
@@ -431,10 +431,10 @@ export default function Dashboard() {
                       <Legend
                         iconType="circle"
                         iconSize={8}
-                        formatter={(value) => <span style={{ color: '#94a3b8', fontSize: 11 }}>{value}</span>}
+                        formatter={(value) => <span style={{ color: '#78716c', fontSize: 11 }}>{value}</span>}
                       />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#f1f5f9' }}
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #e7e5e4', borderRadius: '8px', color: '#1f1f1f' }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -453,22 +453,22 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
             >
-              <Card className="bg-slate-900 border-slate-800">
+              <Card className="bg-white border-stone-200">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white text-sm">
-                    <Bot className="h-4 w-4 text-blue-400" />
+                  <CardTitle className="flex items-center gap-2 text-stone-900 text-sm">
+                    <Bot className="h-4 w-4 text-amber-600" />
                     Agent Usage
                   </CardTitle>
-                  <CardDescription className="text-slate-500 text-xs">Calls per agent</CardDescription>
+                  <CardDescription className="text-stone-500 text-xs">Calls per agent</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {agentUsage.map((a, i) => (
                     <div key={a.name} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-300 truncate max-w-[120px]">{a.name}</span>
-                        <span className="text-slate-500">{a.value}</span>
+                        <span className="text-stone-700 truncate max-w-[120px]">{a.name}</span>
+                        <span className="text-stone-500">{a.value}</span>
                       </div>
-                      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.round((a.value / Math.max(...agentUsage.map(x => x.value))) * 100)}%` }}
@@ -491,19 +491,19 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="bg-slate-900 border-slate-800">
+            <Card className="bg-white border-stone-200">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-white text-sm">
-                    <Zap className="h-4 w-4 text-amber-400" />
+                  <CardTitle className="flex items-center gap-2 text-stone-900 text-sm">
+                    <Zap className="h-4 w-4 text-amber-600" />
                     Recent Conversations
                   </CardTitle>
-                  <CardDescription className="text-slate-500 text-xs">
+                  <CardDescription className="text-stone-500 text-xs">
                     {total} total · showing latest {recent.length}
                   </CardDescription>
                 </div>
                 <Button variant="outline" size="sm" asChild
-                  className="border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800">
+                  className="border-stone-300 text-stone-600 hover:text-stone-900 hover:bg-stone-100">
                   <Link to="/calls" className="gap-1">
                     View all <ArrowRight className="h-3 w-3" />
                   </Link>
@@ -511,28 +511,28 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {errConvs && (
-                  <p className="text-sm text-red-400 py-4">Failed to load conversations.</p>
+                  <p className="text-sm text-red-600 py-4">Failed to load conversations.</p>
                 )}
                 {!isLoading && recent.length === 0 && (
                   <div className="text-center py-8 space-y-2">
-                    <Phone className="h-8 w-8 text-slate-700 mx-auto" />
-                    <p className="text-sm text-slate-600">No conversations yet.</p>
-                    <p className="text-xs text-slate-700">Create an agent and test it in the Playground!</p>
+                    <Phone className="h-8 w-8 text-stone-400 mx-auto" />
+                    <p className="text-sm text-stone-600">No conversations yet.</p>
+                    <p className="text-xs text-stone-500">Create an agent and test it in the Playground!</p>
                   </div>
                 )}
-                <div className="divide-y divide-slate-800">
+                <div className="divide-y divide-stone-100">
                   {recent.map((c) => (
                     <div key={c.id} className="py-3 flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm text-white truncate">{c.agent.name}</p>
+                          <p className="font-medium text-sm text-stone-900 truncate">{c.agent.name}</p>
                           {c.sentiment_score !== null && (
                             <span className="text-xs">
                               {c.sentiment_score > 0 ? '😊' : c.sentiment_score < 0 ? '😞' : '😐'}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-stone-500">
                           {new Date(c.start_time).toLocaleString()} · {durationLabel(c.start_time, c.end_time)} · {c._count.messages} messages
                         </p>
                       </div>
@@ -553,11 +553,11 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="bg-gradient-to-r from-blue-600/10 via-violet-600/10 to-emerald-600/10 border-slate-800">
+          <Card className="bg-gradient-to-r from-amber-50 via-white to-stone-50 border-stone-200">
             <CardContent className="py-5 flex flex-wrap gap-3 items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-white">Quick Actions</p>
-                <p className="text-xs text-slate-500">Jump straight to common tasks</p>
+                <p className="text-sm font-semibold text-stone-900">Quick Actions</p>
+                <p className="text-xs text-stone-500">Jump straight to common tasks</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -569,11 +569,11 @@ export default function Dashboard() {
                   <Button
                     key={label}
                     size="sm"
-                    variant={primary ? 'default' : 'outline'}
+                    variant={primary ? 'primary' : 'outline'}
                     asChild
                     className={primary
-                      ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                      : 'border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'}
+                      ? ''
+                      : 'border-stone-300 text-stone-600 hover:text-stone-900 hover:bg-stone-100'}
                   >
                     <Link to={to}>
                       <Icon className="h-3.5 w-3.5 mr-1.5" />

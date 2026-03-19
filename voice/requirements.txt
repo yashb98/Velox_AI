@@ -34,3 +34,6 @@ twilio>=9.0.0,<10.0.0
 
 # ─── Daily.co (WebRTC transport) ──────────────────────────────────────────────
 daily-python>=0.10.0,<0.12.0
+
+# ─── LangSmith (LLM tracing and observability) ─────────────────────────────────
+langsmith>=0.2.0

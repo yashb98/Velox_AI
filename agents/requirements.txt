@@ -4,3 +4,13 @@ httpx>=0.27.0
 pydantic>=2.9.2
 Deprecated>=1.2.14
 litellm>=1.40.0
+
+# ─── LangGraph (state machine for voice agent) ─────────────────────────────────
+langgraph>=0.3.0
+langchain-core>=0.3.0
+
+# ─── LangSmith (observability and tracing) ─────────────────────────────────────
+langsmith>=0.2.0
+
+# ─── Metrics ───────────────────────────────────────────────────────────────────
+prometheus-client>=0.19.0

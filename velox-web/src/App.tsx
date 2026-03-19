@@ -1,12 +1,9 @@
 // src/App.tsx
 // Routing config.
 // - WithLayout wraps protected pages in the collapsible AppLayout sidebar.
-// - Playground and Flow Builder (per-agent) remain full-screen (no sidebar).
-// - Top-level routes: /playground (PlaygroundHub), /flow (FlowCanvas), /policy (CompanyPolicy).
 // - When VITE_AUTH_ENABLED=false, all routes are accessible without authentication.
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import HomePage from './pages/HomePage'
 import DocsPage from './pages/DocsPage'
 import AgentFlowBuilder from './pages/AgentFlowBuilder'
@@ -20,22 +17,21 @@ import Agents from './pages/Agents'
 import Calls from './pages/Calls'
 import Knowledge from './pages/Knowledge'
 import AppLayout from './components/AppLayout'
+import { isAuthEnabled } from './auth'
 
-// Check if auth is enabled (from environment)
-const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED !== 'false'
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-// Auth is truly enabled only if both the flag is set and we have a valid key
-const isAuthEnabled = AUTH_ENABLED && CLERK_KEY && CLERK_KEY.startsWith('pk_')
+// Conditionally import Clerk - only used when auth is enabled
+// When auth is disabled, these imports exist but are never called
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 
 // Wrapper: redirects to Clerk sign-in if user is not authenticated
 // When auth is disabled, just renders children directly
 function Protected({ children }: { children: React.ReactNode }) {
   if (!isAuthEnabled) {
-    // Auth disabled - render children directly
+    // Auth disabled - render children directly without Clerk
     return <>{children}</>
   }
 
+  // Auth enabled - ClerkProvider is present in main.tsx
   return (
     <>
       <SignedIn>{children}</SignedIn>

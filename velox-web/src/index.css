@@ -1,42 +1,43 @@
 /* src/index.css */
+/* Claude.ai-inspired Design System — Warm, elegant, minimalist */
 
 @import "tailwindcss";
 
-/* ── Design System — Dark-first, high-contrast ──────────────────────────────── */
+/* ── Design System — Claude.ai aesthetic ────────────────────────────────────── */
 @theme {
-  /* Brand */
-  --color-primary:            #3b82f6;   /* blue-500  */
+  /* Brand - Warm coral/orange accent */
+  --color-primary:            #d97706;   /* amber-600 */
   --color-primary-foreground: #ffffff;
 
-  /* Dark background hierarchy */
-  --color-background:         #020617;   /* slate-950 */
-  --color-foreground:         #f1f5f9;   /* slate-100 */
+  /* Warm background hierarchy */
+  --color-background:         #faf9f7;   /* warm off-white */
+  --color-foreground:         #1f1f1f;   /* near black */
 
-  --color-card:               #0f172a;   /* slate-900 */
-  --color-card-foreground:    #e2e8f0;   /* slate-200 */
+  --color-card:               #ffffff;
+  --color-card-foreground:    #292524;   /* stone-800 */
 
-  --color-muted:              #1e293b;   /* slate-800 */
-  --color-muted-foreground:   #94a3b8;   /* slate-400 */
+  --color-muted:              #f5f5f4;   /* stone-100 */
+  --color-muted-foreground:   #78716c;   /* stone-500 */
 
-  --color-accent:             #1e293b;
-  --color-accent-foreground:  #f1f5f9;
+  --color-accent:             #fef3c7;   /* amber-100 */
+  --color-accent-foreground:  #92400e;   /* amber-800 */
 
-  --color-secondary:          #334155;   /* slate-700 */
-  --color-secondary-foreground: #e2e8f0;
+  --color-secondary:          #e7e5e4;   /* stone-200 */
+  --color-secondary-foreground: #44403c; /* stone-700 */
 
-  --color-border:             #1e293b;   /* slate-800 */
-  --color-input:              #1e293b;
-  --color-ring:               #3b82f6;
+  --color-border:             #e7e5e4;   /* stone-200 */
+  --color-input:              #e7e5e4;
+  --color-ring:               #d97706;   /* amber-600 */
 
-  --color-destructive:        #ef4444;
+  --color-destructive:        #dc2626;   /* red-600 */
   --color-destructive-foreground: #ffffff;
 
-  /* Radius */
-  --radius:     0.5rem;
-  --radius-sm:  0.25rem;
-  --radius-md:  0.375rem;
-  --radius-lg:  0.5rem;
-  --radius-xl:  0.75rem;
+  /* Softer radius for elegant look */
+  --radius:     0.75rem;
+  --radius-sm:  0.375rem;
+  --radius-md:  0.5rem;
+  --radius-lg:  0.75rem;
+  --radius-xl:  1rem;
 }
 
 /* ── Base reset ─────────────────────────────────────────────────────────────── */
@@ -49,15 +50,220 @@ html {
 }
 
 body {
-  background-color: #020617;   /* slate-950 */
-  color: #f1f5f9;              /* slate-100 */
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #faf9f7;
+  color: #1f1f1f;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
 }
 
-/* ── Scrollbar styling (dark) ───────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0f172a; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
+/* ── Typography ─────────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #1f1f1f;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+
+p {
+  color: #57534e;
+}
+
+/* ── Links ──────────────────────────────────────────────────────────────────── */
+a {
+  color: #d97706;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #b45309;
+}
+
+/* ── Smooth transitions for all interactive elements ────────────────────────── */
+button, a, input, textarea, select, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Focus states ───────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #d97706;
+  outline-offset: 2px;
+}
+
+/* ── Scrollbar styling (minimal) ────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+/* ── Card hover effects ─────────────────────────────────────────────────────── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08),
+              0 4px 8px -4px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Button hover glow effect ───────────────────────────────────────────────── */
+.btn-glow:hover {
+  box-shadow: 0 0 20px rgba(217, 119, 6, 0.3);
+}
+
+/* ── Subtle gradient backgrounds ────────────────────────────────────────────── */
+.bg-gradient-warm {
+  background: linear-gradient(135deg, #faf9f7 0%, #fef3c7 100%);
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(180deg, #ffffff 0%, #faf9f7 100%);
+}
+
+/* ── Text gradient for headings ─────────────────────────────────────────────── */
+.text-gradient {
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #dc2626 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Smooth page transitions ────────────────────────────────────────────────── */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ── Input styling ──────────────────────────────────────────────────────────── */
+input, textarea, select {
+  background-color: #ffffff;
+  border: 1px solid #e7e5e4;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: #1f1f1f;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+  outline: none;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #a8a29e;
+}
+
+/* ── Badge styling ──────────────────────────────────────────────────────────── */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Subtle animations ──────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ── Responsive utilities ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  h1 { font-size: 1.875rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+/* ── Selection styling ──────────────────────────────────────────────────────── */
+::selection {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* ── Loading skeleton ───────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #f5f5f4 25%, #e7e5e4 50%, #f5f5f4 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Hover underline effect ─────────────────────────────────────────────────── */
+.hover-underline {
+  position: relative;
+}
+
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #d97706;
+  transition: width 0.3s ease;
+}
+
+.hover-underline:hover::after {
+  width: 100%;
+}

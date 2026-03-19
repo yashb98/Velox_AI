@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 
 # Copy source
-COPY main.py pipeline.py ./
+COPY main.py pipeline.py router.py voice_agent.py tracing.py tools.py ./
 
 # Non-root user for security
 RUN adduser --disabled-password --gecos "" velox

@@ -54,24 +54,24 @@ export default function PlaygroundHub() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#faf9f7]">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
+        className="border-b border-stone-200 bg-[#faf9f7]/95 backdrop-blur sticky top-0 z-10"
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-              <Play className="h-4 w-4 text-blue-400" />
+            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Play className="h-4 w-4 text-amber-600" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">Playground</h1>
-              <p className="text-xs text-slate-500">Select an agent to start a test conversation</p>
+              <h1 className="text-lg font-semibold text-stone-900">Playground</h1>
+              <p className="text-xs text-stone-500">Select an agent to start a test conversation</p>
             </div>
           </div>
-          <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">
+          <Badge variant="outline" className="border-stone-300 text-stone-600 text-xs">
             {agents.length + (demoAgent ? 1 : 0)} agent{(agents.length + (demoAgent ? 1 : 0)) !== 1 ? 's' : ''}
           </Badge>
         </div>
@@ -80,17 +80,17 @@ export default function PlaygroundHub() {
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Search */}
         <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search agents…"
-            className="pl-9 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+            className="pl-9 bg-white border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-amber-500"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-700"
             >
               <X className="h-4 w-4" />
             </button>
@@ -119,19 +119,19 @@ export default function PlaygroundHub() {
                       <Bot className="h-5 w-5 text-amber-400" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white text-sm leading-tight">{demoAgent.name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 italic">Demo — runs locally, no API needed</p>
+                      <p className="font-semibold text-stone-900 text-sm leading-tight">{demoAgent.name}</p>
+                      <p className="text-xs text-stone-500 mt-0.5 italic">Demo — runs locally, no API needed</p>
                     </div>
                   </div>
                   <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs shrink-0">
                     ● Demo
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed mb-3">
                   {demoAgent.system_prompt}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                  <span className="text-xs text-stone-500 flex items-center gap-1">
                     <Mic2 className="h-3 w-3" />
                     {demoAgent.voice_id}
                   </span>
@@ -157,7 +157,7 @@ export default function PlaygroundHub() {
 
         {/* Loading */}
         {isLoading && (
-          <div className="flex items-center justify-center py-20 text-slate-500">
+          <div className="flex items-center justify-center py-20 text-stone-500">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
             Loading agents…
           </div>
@@ -169,13 +169,13 @@ export default function PlaygroundHub() {
             <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
               <AlertCircle className="h-6 w-6 text-red-400" />
             </div>
-            <p className="text-white font-medium">Failed to load agents</p>
-            <p className="text-sm text-slate-500">Check your connection and try again.</p>
+            <p className="text-stone-900 font-medium">Failed to load agents</p>
+            <p className="text-sm text-stone-500">Check your connection and try again.</p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              className="border-slate-700 text-slate-300 hover:text-white"
+              className="border-stone-300 text-stone-700 hover:text-stone-900"
             >
               Retry
             </Button>
@@ -189,15 +189,15 @@ export default function PlaygroundHub() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-16"
           >
-            <div className="h-16 w-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto mb-4">
-              <Bot className="h-8 w-8 text-slate-500" />
+            <div className="h-16 w-16 rounded-2xl bg-slate-800 border border-stone-300 flex items-center justify-center mx-auto mb-4">
+              <Bot className="h-8 w-8 text-stone-500" />
             </div>
-            <h2 className="text-lg font-semibold text-white mb-2">No agents yet</h2>
-            <p className="text-sm text-slate-500 mb-5">
+            <h2 className="text-lg font-semibold text-stone-900 mb-2">No agents yet</h2>
+            <p className="text-sm text-stone-500 mb-5">
               Create an agent first, or run the tutorial to create a demo agent.
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
-              <Button asChild className="bg-blue-600 hover:bg-blue-500 text-white">
+              <Button asChild className="bg-amber-600 hover:bg-amber-500 text-white">
                 <Link to="/agents">
                   <Bot className="h-4 w-4 mr-2" />
                   Go to Agents
@@ -215,7 +215,7 @@ export default function PlaygroundHub() {
 
         {/* No search results */}
         {!isLoading && !isError && agents.length > 0 && filtered.length === 0 && (
-          <div className="text-center py-12 text-slate-500">
+          <div className="text-center py-12 text-stone-500">
             <Search className="h-8 w-8 mx-auto mb-3 text-slate-700" />
             <p className="text-sm">No agents match "{search}"</p>
           </div>
@@ -237,17 +237,17 @@ export default function PlaygroundHub() {
                   to={`/agents/${agent.id}/playground`}
                   className="group block h-full"
                 >
-                  <div className="h-full bg-slate-900 border border-slate-800 rounded-xl p-5 transition-all duration-200 hover:border-blue-500/50 hover:bg-slate-800/80 hover:shadow-lg hover:shadow-blue-900/20">
+                  <div className="h-full bg-white border border-stone-200 rounded-xl p-5 transition-all duration-200 hover:border-blue-500/50 hover:bg-slate-800/80 hover:shadow-lg hover:shadow-blue-900/20">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/20 shrink-0">
-                          <Bot className="h-5 w-5 text-blue-400" />
+                        <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center ring-1 ring-amber-500/20 shrink-0">
+                          <Bot className="h-5 w-5 text-amber-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-white text-sm leading-tight">
+                          <p className="font-semibold text-stone-900 text-sm leading-tight">
                             {agent.name}
                           </p>
-                          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <p className="text-xs text-stone-500 flex items-center gap-1 mt-0.5">
                             <Phone className="h-3 w-3" />
                             {agent.phone_number || <span className="italic">No phone</span>}
                           </p>
@@ -258,25 +258,25 @@ export default function PlaygroundHub() {
                         className={
                           agent.is_active
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs shrink-0'
-                            : 'border-slate-700 text-slate-500 text-xs shrink-0'
+                            : 'border-stone-300 text-stone-500 text-xs shrink-0'
                         }
                       >
                         {agent.is_active ? '● Live' : '○ Off'}
                       </Badge>
                     </div>
 
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                    <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed mb-4">
                       {agent.system_prompt || (
                         <span className="italic text-slate-600">No system prompt</span>
                       )}
                     </p>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="text-xs text-stone-500 flex items-center gap-1">
                         <Mic2 className="h-3 w-3" />
                         {agent.voice_id}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="flex items-center gap-1 text-xs text-amber-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                         <Zap className="h-3 w-3" />
                         Launch
                         <ChevronRight className="h-3 w-3" />

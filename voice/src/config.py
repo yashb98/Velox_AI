@@ -103,6 +103,12 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
 
+    # ─── LangSmith (LLM tracing) ───────────────────────────────────────────────
+    langsmith_api_key: str = ""
+    langsmith_project: str = "velox-voice-agent"
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
+    langsmith_tracing: bool = True
+
     # ─── Voice Pipeline ───────────────────────────────────────────────────────
     # VAD (Voice Activity Detection)
     vad_threshold: float = 0.5

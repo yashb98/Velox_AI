@@ -74,7 +74,7 @@ function FieldHelp({ text }: { text: string }) {
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="text-slate-500 hover:text-slate-300 transition-colors"
+        className="text-stone-500 hover:text-stone-700 transition-colors"
         aria-label="Help"
       >
         <Info className="h-3.5 w-3.5" />
@@ -85,9 +85,9 @@ function FieldHelp({ text }: { text: string }) {
             initial={{ opacity: 0, y: 4, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.95 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 w-56 bg-slate-800 border border-slate-700 rounded-lg p-2.5 shadow-xl pointer-events-none"
+            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 w-56 bg-stone-100 border border-stone-300 rounded-lg p-2.5 shadow-xl pointer-events-none"
           >
-            <p className="text-xs text-slate-300 leading-relaxed">{text}</p>
+            <p className="text-xs text-stone-700 leading-relaxed">{text}</p>
             <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-700" />
           </motion.div>
         )}
@@ -244,19 +244,19 @@ export default function Agents() {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-slate-950">
+      <div className="min-h-screen bg-[#faf9f7]">
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <motion.header
           id="agents-header"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
+          className="border-b border-stone-200 bg-[#faf9f7]/95 backdrop-blur sticky top-0 z-10"
         >
           <div className="container mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Bot className="h-6 w-6 text-blue-400" />
-              <h1 className="text-xl font-semibold text-white">Agents</h1>
-              <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">
+              <h1 className="text-xl font-semibold text-stone-900">Agents</h1>
+              <Badge variant="outline" className="border-stone-300 text-stone-600 text-xs">
                 {agents.length} agent{agents.length !== 1 ? 's' : ''}
               </Badge>
             </div>
@@ -266,7 +266,7 @@ export default function Agents() {
                 id="new-agent-btn"
                 size="sm"
                 onClick={openCreate}
-                className="bg-blue-600 hover:bg-blue-500 text-white"
+                className="bg-amber-600 hover:bg-amber-500 text-white"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 New Agent
@@ -278,7 +278,7 @@ export default function Agents() {
         <div className="container mx-auto px-6 py-8">
           {/* ── Loading ──────────────────────────────────────────────────────── */}
           {isLoading && (
-            <div className="flex items-center justify-center py-24 text-slate-500">
+            <div className="flex items-center justify-center py-24 text-stone-500">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
               Loading agents…
             </div>
@@ -290,12 +290,12 @@ export default function Agents() {
               <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
                 <X className="h-6 w-6 text-red-400" />
               </div>
-              <p className="text-white font-medium">Failed to load agents</p>
-              <p className="text-sm text-slate-500">Check your connection and API key, then try refreshing.</p>
+              <p className="text-stone-900 font-medium">Failed to load agents</p>
+              <p className="text-sm text-stone-500">Check your connection and API key, then try refreshing.</p>
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-700 text-slate-300 hover:text-white"
+                className="border-stone-300 text-stone-700 hover:text-stone-900"
                 onClick={() => qc.invalidateQueries({ queryKey: ['agents'] })}
               >
                 Retry
@@ -312,15 +312,15 @@ export default function Agents() {
             >
               <div className="relative w-20 h-20 mx-auto mb-6">
                 <div className="absolute inset-0 rounded-2xl bg-blue-500/20 animate-pulse" />
-                <div className="relative h-20 w-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                <div className="relative h-20 w-20 rounded-2xl bg-stone-100 border border-stone-300 flex items-center justify-center">
                   <Bot className="h-10 w-10 text-blue-400" />
                 </div>
               </div>
 
-              <h2 className="text-2xl font-bold text-white mb-3">
+              <h2 className="text-2xl font-bold text-stone-900 mb-3">
                 Create Your First AI Agent
               </h2>
-              <p className="text-slate-400 mb-8 leading-relaxed max-w-md mx-auto">
+              <p className="text-stone-600 mb-8 leading-relaxed max-w-md mx-auto">
                 Agents are voice-powered AIs that answer calls, look up information, and take
                 actions — 24/7, without a human team. Set one up in under 2 minutes.
               </p>
@@ -334,16 +334,16 @@ export default function Agents() {
                 ].map(({ n, icon: Icon, label, desc }) => (
                   <div
                     key={n}
-                    className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2"
+                    className="bg-white border border-stone-200 rounded-xl p-4 space-y-2"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                      <span className="h-6 w-6 rounded-full bg-amber-600 text-white text-xs font-bold flex items-center justify-center">
                         {n}
                       </span>
-                      <Icon className="h-4 w-4 text-slate-400" />
+                      <Icon className="h-4 w-4 text-stone-600" />
                     </div>
-                    <p className="text-sm font-semibold text-white">{label}</p>
-                    <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                    <p className="text-sm font-semibold text-stone-900">{label}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed">{desc}</p>
                   </div>
                 ))}
               </div>
@@ -351,14 +351,14 @@ export default function Agents() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
                   onClick={openCreate}
-                  className="bg-blue-600 hover:bg-blue-500 text-white"
+                  className="bg-amber-600 hover:bg-amber-500 text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Agent
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                  className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
                   onClick={() => setShowTutorial(true)}
                 >
                   <ChevronRight className="h-4 w-4 mr-1" />
@@ -379,7 +379,7 @@ export default function Agents() {
               >
                 <Card
                   id={i === 0 ? 'agent-card-0' : undefined}
-                  className="h-full hover:shadow-lg hover:shadow-blue-900/10 transition-all duration-200 bg-slate-900 border-slate-800 hover:border-slate-700"
+                  className="h-full hover:shadow-lg hover:shadow-blue-900/10 transition-all duration-200 bg-white border-stone-200 hover:border-stone-300"
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -388,8 +388,8 @@ export default function Agents() {
                           <Bot className="h-5 w-5 text-blue-400" />
                         </div>
                         <div>
-                          <CardTitle className="text-base text-white">{agent.name}</CardTitle>
-                          <CardDescription className="text-xs flex items-center gap-1 mt-0.5 text-slate-500">
+                          <CardTitle className="text-base text-stone-900">{agent.name}</CardTitle>
+                          <CardDescription className="text-xs flex items-center gap-1 mt-0.5 text-stone-500">
                             <Phone className="h-3 w-3" />
                             {agent.phone_number || <span className="italic">No phone assigned</span>}
                           </CardDescription>
@@ -399,20 +399,20 @@ export default function Agents() {
                         variant={agent.is_active ? 'default' : 'outline'}
                         className={agent.is_active
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs'
-                          : 'border-slate-700 text-slate-500 text-xs'}
+                          : 'border-stone-300 text-stone-500 text-xs'}
                       >
                         {agent.is_active ? '● Active' : '○ Inactive'}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">
+                    <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed">
                       {agent.system_prompt || (
                         <span className="italic text-slate-600">No system prompt set</span>
                       )}
                     </p>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-stone-500">
                       <span className="flex items-center gap-1">
                         <Mic2 className="h-3 w-3" />
                         {agent.voice_id}
@@ -434,7 +434,7 @@ export default function Agents() {
                         variant="outline"
                         size="sm"
                         onClick={() => openEdit(agent)}
-                        className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                        className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
                       >
                         <Pencil className="h-3 w-3 mr-1" />
                         Edit
@@ -444,7 +444,7 @@ export default function Agents() {
                         variant="outline"
                         size="sm"
                         asChild
-                        className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                        className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
                       >
                         <Link to={`/agents/${agent.id}/flow`}>
                           <Workflow className="h-3 w-3 mr-1" />
@@ -456,7 +456,7 @@ export default function Agents() {
                         variant="outline"
                         size="sm"
                         asChild
-                        className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                        className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
                       >
                         <Link to={`/agents/${agent.id}/playground`}>
                           <PlayCircle className="h-3 w-3 mr-1" />
@@ -489,15 +489,15 @@ export default function Agents() {
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 onAnimationComplete={() => setDrawerReady(true)}
-                className="relative w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col text-slate-100"
+                className="relative w-full max-w-md bg-white border-l border-stone-200 shadow-2xl flex flex-col text-slate-100"
               >
                 {/* Drawer Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
                       <Bot className="h-4 w-4 text-blue-400" />
                     </div>
-                    <h2 className="text-base font-semibold text-white">
+                    <h2 className="text-base font-semibold text-stone-900">
                       {editing ? 'Edit Agent' : 'New Agent'}
                     </h2>
                   </div>
@@ -505,7 +505,7 @@ export default function Agents() {
                     variant="ghost"
                     size="icon"
                     onClick={closeDrawer}
-                    className="text-slate-400 hover:text-white hover:bg-slate-800"
+                    className="text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -517,7 +517,7 @@ export default function Agents() {
 
                     {/* Agent Name */}
                     <div id="field-name" className="space-y-1.5">
-                      <Label htmlFor="name" className="text-slate-300 flex items-center">
+                      <Label htmlFor="name" className="text-stone-700 flex items-center">
                         Agent Name <span className="text-red-400 ml-0.5">*</span>
                         <FieldHelp text="A clear internal name. Used in dashboards, logs, and analytics. E.g. 'US Sales Bot' or 'EN Support'." />
                       </Label>
@@ -527,18 +527,18 @@ export default function Agents() {
                         value={form.name}
                         onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                         placeholder="e.g. US Support Agent, Sales Bot, Appointment Scheduler"
-                        className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+                        className="bg-stone-100 border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-blue-500"
                       />
                     </div>
 
                     {/* Phone Number */}
                     <div id="field-phone" className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-slate-300 flex items-center">
+                      <Label htmlFor="phone" className="text-stone-700 flex items-center">
                         Phone Number
                         <FieldHelp text="The Twilio number to assign. Callers who dial this number will be routed to this agent. Buy numbers at console.twilio.com first." />
                       </Label>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
                         <Input
                           id="phone"
                           value={form.phone_number}
@@ -546,17 +546,17 @@ export default function Agents() {
                             setForm((f) => ({ ...f, phone_number: e.target.value }))
                           }
                           placeholder="+1 555 000 0000"
-                          className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+                          className="pl-9 bg-stone-100 border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-blue-500"
                         />
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-stone-500">
                         Leave blank to test in the Playground without going live.
                       </p>
                     </div>
 
                     {/* Voice */}
                     <div id="field-voice" className="space-y-1.5">
-                      <Label htmlFor="voice" className="text-slate-300 flex items-center">
+                      <Label htmlFor="voice" className="text-stone-700 flex items-center">
                         Voice
                         <FieldHelp text="Controls how the agent sounds. Use Deepgram Aura voices for low latency, or prefix with 'el_' to use an ElevenLabs voice ID." />
                       </Label>
@@ -571,7 +571,7 @@ export default function Agents() {
                             className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
                               form.voice_id === v.id
                                 ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                                : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                                : 'border-stone-300 text-stone-600 hover:border-slate-500 hover:text-stone-700'
                             }`}
                           >
                             {v.label}
@@ -580,7 +580,7 @@ export default function Agents() {
                       </div>
 
                       <div className="relative">
-                        <Mic2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                        <Mic2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
                         <Input
                           id="voice"
                           value={form.voice_id}
@@ -588,14 +588,14 @@ export default function Agents() {
                             setForm((f) => ({ ...f, voice_id: e.target.value }))
                           }
                           placeholder="aura-asteria-en  or  el_XXXXXXXX for ElevenLabs"
-                          className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 font-mono text-sm"
+                          className="pl-9 bg-stone-100 border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-blue-500 font-mono text-sm"
                         />
                       </div>
                     </div>
 
                     {/* System Prompt */}
                     <div id="field-prompt" className="space-y-1.5">
-                      <Label htmlFor="prompt" className="text-slate-300 flex items-center">
+                      <Label htmlFor="prompt" className="text-stone-700 flex items-center">
                         System Prompt <span className="text-red-400 ml-0.5">*</span>
                         <FieldHelp text="The agent's personality and instructions. Be specific: who it is, how it speaks, what it must/must not do, and when to escalate to a human." />
                       </Label>
@@ -603,7 +603,7 @@ export default function Agents() {
                       {/* Starter templates — shown only when prompt is empty */}
                       {!form.system_prompt && (
                         <div className="space-y-1.5">
-                          <p className="text-xs text-slate-500">Start from a template:</p>
+                          <p className="text-xs text-stone-500">Start from a template:</p>
                           <div className="grid grid-cols-2 gap-2">
                             {PROMPT_STARTERS.map((s) => {
                               const Icon = s.icon
@@ -614,11 +614,11 @@ export default function Agents() {
                                   onClick={() =>
                                     setForm((f) => ({ ...f, system_prompt: s.prompt }))
                                   }
-                                  className="text-left p-2.5 rounded-lg border border-slate-700 hover:border-blue-500/50 hover:bg-slate-800 transition-all group"
+                                  className="text-left p-2.5 rounded-lg border border-stone-300 hover:border-blue-500/50 hover:bg-stone-100 transition-all group"
                                 >
                                   <div className="flex items-center gap-1.5 mb-0.5">
-                                    <Icon className="h-3 w-3 text-slate-400 group-hover:text-blue-400" />
-                                    <span className="text-xs font-medium text-slate-300">
+                                    <Icon className="h-3 w-3 text-stone-600 group-hover:text-blue-400" />
+                                    <span className="text-xs font-medium text-stone-700">
                                       {s.label}
                                     </span>
                                   </div>
@@ -644,7 +644,7 @@ export default function Agents() {
                           '- Keep answers under 3 sentences.\n' +
                           '- If you cannot help, say "Let me connect you with a specialist."'
                         }
-                        className="resize-none bg-slate-800 border-slate-700 text-white placeholder:text-slate-600 focus:border-blue-500 font-mono text-sm leading-relaxed"
+                        className="resize-none bg-stone-100 border-stone-300 text-stone-900 placeholder:text-slate-600 focus:border-blue-500 font-mono text-sm leading-relaxed"
                       />
                       <div className="flex justify-between text-xs text-slate-600">
                         <span>Replace [placeholders] with your actual values</span>
@@ -654,10 +654,10 @@ export default function Agents() {
                   </div>
 
                   {/* Sticky footer */}
-                  <div className="sticky bottom-0 bg-slate-900 border-t border-slate-800 px-6 py-4">
+                  <div className="sticky bottom-0 bg-white border-t border-stone-200 px-6 py-4">
                     <Button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+                      className="w-full bg-amber-600 hover:bg-amber-500 text-white"
                       disabled={isSaving}
                     >
                       {isSaving ? (
@@ -675,7 +675,7 @@ export default function Agents() {
                       )}
                     </Button>
                     {!editing && (
-                      <p className="text-xs text-slate-500 text-center mt-2">
+                      <p className="text-xs text-stone-500 text-center mt-2">
                         You can test your agent in the Playground before assigning a phone number.
                       </p>
                     )}
