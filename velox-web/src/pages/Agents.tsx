@@ -1,8 +1,6 @@
 // src/pages/Agents.tsx
-// 5.5 — Agents list page: create / edit agents via a side drawer.
-//        Uses TanStack Query for data fetching from GET /api/agents.
-// UX  — Added step-by-step AgentTutorial, contextual help text, richer
-//        placeholders, onboarding empty state, and ID anchors for spotlight.
+// Redesigned with onboarding interview flow.
+// Agent type selection + guided questions = auto-generated persona from company docs.
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -18,7 +16,6 @@ import {
   Bot,
   Plus,
   Phone,
-  Workflow,
   PlayCircle,
   Pencil,
   X,
@@ -26,13 +23,16 @@ import {
   Mic2,
   FileText,
   Zap,
-  MessageSquare,
-  ChevronRight,
-  Info,
+  ChevronLeft,
+  Headphones,
+  CalendarCheck,
+  HelpCircle,
+  Check,
+  ArrowRight,
+  FolderOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
-import { AgentTutorial, AgentTutorialTrigger } from '@/components/agents/AgentTutorial'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,94 +44,68 @@ interface Agent {
   system_prompt: string
   is_active: boolean
   org_id: string
+  agent_type?: string
   _count?: { conversations: number }
 }
 
-interface AgentForm {
-  name: string
-  phone_number: string
-  voice_id: string
-  system_prompt: string
-}
+// ── Agent Types ───────────────────────────────────────────────────────────────
 
-const DEFAULT_FORM: AgentForm = {
-  name: '',
-  phone_number: '',
-  voice_id: 'aura-asteria-en',
-  system_prompt: '',
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Small inline help bubble shown next to a label */
-function FieldHelp({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <span className="relative inline-block ml-1 align-middle">
-      <button
-        type="button"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        className="text-stone-500 hover:text-stone-700 transition-colors"
-        aria-label="Help"
-      >
-        <Info className="h-3.5 w-3.5" />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.95 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 w-56 bg-stone-100 border border-stone-300 rounded-lg p-2.5 shadow-xl pointer-events-none"
-          >
-            <p className="text-xs text-stone-700 leading-relaxed">{text}</p>
-            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-700" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </span>
-  )
-}
-
-// ── Voice presets ─────────────────────────────────────────────────────────────
-
-const VOICE_PRESETS = [
-  { id: 'aura-asteria-en', label: 'Asteria (female, US)' },
-  { id: 'aura-luna-en',    label: 'Luna (female, soft)' },
-  { id: 'aura-orion-en',   label: 'Orion (male, US)' },
-  { id: 'aura-arcas-en',   label: 'Arcas (male, deep)' },
+const AGENT_TYPES = [
+  {
+    id: 'customer_support',
+    label: 'Customer Support',
+    description: 'Handle FAQs, order status, returns, and escalations',
+    icon: Headphones,
+    color: 'bg-blue-100 text-blue-700 border-blue-200',
+    questions: [
+      { id: 'company_name', label: 'What is your company name?', placeholder: 'e.g. Acme Corporation' },
+      { id: 'products', label: 'What products/services do customers ask about?', placeholder: 'e.g. Electronics, software subscriptions, shipping' },
+      { id: 'escalation', label: 'When should the agent escalate to a human?', placeholder: 'e.g. Refunds over $100, complaints, technical issues' },
+    ],
+  },
+  {
+    id: 'sales',
+    label: 'Sales Outreach',
+    description: 'Qualify leads, schedule demos, and follow up',
+    icon: Zap,
+    color: 'bg-amber-100 text-amber-700 border-amber-200',
+    questions: [
+      { id: 'company_name', label: 'What is your company name?', placeholder: 'e.g. TechSolutions Inc' },
+      { id: 'offering', label: 'What are you selling?', placeholder: 'e.g. SaaS platform, consulting services' },
+      { id: 'pricing_url', label: 'Where can customers find pricing?', placeholder: 'e.g. example.com/pricing or "Contact us for a quote"' },
+    ],
+  },
+  {
+    id: 'appointment',
+    label: 'Appointment Booking',
+    description: 'Book, reschedule, and cancel appointments',
+    icon: CalendarCheck,
+    color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    questions: [
+      { id: 'business_name', label: 'What is your business name?', placeholder: 'e.g. Downtown Dental Clinic' },
+      { id: 'services', label: 'What services do you offer?', placeholder: 'e.g. Checkups, cleanings, cosmetic dentistry' },
+      { id: 'hours', label: 'What are your operating hours?', placeholder: 'e.g. Mon-Fri 9am-5pm, Sat 10am-2pm' },
+    ],
+  },
+  {
+    id: 'it_helpdesk',
+    label: 'IT Help Desk',
+    description: 'Resolve tickets, reset passwords, guide users',
+    icon: HelpCircle,
+    color: 'bg-violet-100 text-violet-700 border-violet-200',
+    questions: [
+      { id: 'company_name', label: 'What is your company name?', placeholder: 'e.g. GlobalTech Corp' },
+      { id: 'common_issues', label: 'What are common issues users face?', placeholder: 'e.g. Password resets, VPN issues, software installation' },
+      { id: 'systems', label: 'What systems/tools do you support?', placeholder: 'e.g. Microsoft 365, Slack, Salesforce' },
+    ],
+  },
 ]
 
-// ── System prompt starters ────────────────────────────────────────────────────
-
-const PROMPT_STARTERS = [
-  {
-    label: 'Customer Support',
-    icon: MessageSquare,
-    prompt:
-      'You are a friendly customer support agent for [Company]. Your job is to help customers with questions about orders, returns, and product information. Keep answers concise (under 3 sentences). If you cannot help, say "Let me transfer you to a specialist."',
-  },
-  {
-    label: 'Sales Agent',
-    icon: Zap,
-    prompt:
-      'You are an enthusiastic sales agent for [Company]. Your goal is to understand the customer\'s needs, highlight matching products, and guide them toward a purchase. Always be honest — never oversell. If asked about pricing, direct them to [URL].',
-  },
-  {
-    label: 'Appointment Booking',
-    icon: Phone,
-    prompt:
-      'You are a scheduling assistant for [Business]. Help callers book, reschedule, or cancel appointments. Collect their name, preferred date/time, and service type. Always confirm details before saving.',
-  },
-  {
-    label: 'FAQ Bot',
-    icon: FileText,
-    prompt:
-      'You are a knowledgeable FAQ assistant. Answer questions using only the information in the knowledge base. If the answer is not in the knowledge base, say "I don\'t have that information — can I connect you with a team member?"',
-  },
+const VOICE_PRESETS = [
+  { id: 'aura-asteria-en', label: 'Asteria', desc: 'Female, US' },
+  { id: 'aura-luna-en', label: 'Luna', desc: 'Female, soft' },
+  { id: 'aura-orion-en', label: 'Orion', desc: 'Male, US' },
+  { id: 'aura-arcas-en', label: 'Arcas', desc: 'Male, deep' },
 ]
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -140,143 +114,209 @@ export default function Agents() {
   const qc = useQueryClient()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<Agent | null>(null)
-  const [form, setForm] = useState<AgentForm>(DEFAULT_FORM)
-  const [showTutorial, setShowTutorial] = useState(false)
-  // Track whether drawer has fully animated open so tutorial knows DOM is ready
-  const [drawerReady, setDrawerReady] = useState(false)
 
-  // Fetch agents — backend returns { agents: Agent[], total: number }
+  // Onboarding wizard state
+  const [step, setStep] = useState(1) // 1: Type, 2: Questions, 3: Voice & Name
+  const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [agentName, setAgentName] = useState('')
+  const [voiceId, setVoiceId] = useState('aura-asteria-en')
+  const [phoneNumber, setPhoneNumber] = useState('')
+
+  // Fetch agents
   const { data: agents = [], isLoading, isError } = useQuery<Agent[]>({
     queryKey: ['agents'],
     queryFn: () =>
-      api
-        .get<{ agents: Agent[]; total: number }>('/api/agents')
-        .then((r) => r.data.agents ?? []),
+      api.get<{ agents: Agent[]; total: number }>('/api/agents').then((r) => r.data.agents ?? []),
   })
 
   // Create mutation
   const createMut = useMutation({
-    mutationFn: (body: AgentForm) =>
+    mutationFn: (body: { name: string; voice_id: string; system_prompt: string; phone_number?: string; agent_type?: string }) =>
       api.post<Agent>('/api/agents', body).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agents'] })
-      toast.success('🎉 Agent created successfully!')
+      toast.success('Agent created! Test it in the Playground.')
       closeDrawer()
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? 'Failed to create agent'
-      toast.error(msg)
+      toast.error(err?.response?.data?.error ?? 'Failed to create agent')
     },
   })
 
   // Update mutation
   const updateMut = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<AgentForm> }) =>
+    mutationFn: ({ id, body }: { id: string; body: Partial<Agent> }) =>
       api.patch<Agent>(`/api/agents/${id}`, body).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agents'] })
-      toast.success('Agent updated successfully')
+      toast.success('Agent updated')
       closeDrawer()
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? 'Failed to update agent'
-      toast.error(msg)
+      toast.error(err?.response?.data?.error ?? 'Failed to update agent')
     },
   })
 
   function openCreate() {
     setEditing(null)
-    setForm(DEFAULT_FORM)
-    setDrawerReady(false)
+    setStep(1)
+    setSelectedType(null)
+    setAnswers({})
+    setAgentName('')
+    setVoiceId('aura-asteria-en')
+    setPhoneNumber('')
     setDrawerOpen(true)
   }
 
   function openEdit(agent: Agent) {
     setEditing(agent)
-    setForm({
-      name: agent.name,
-      phone_number: agent.phone_number ?? '',
-      voice_id: agent.voice_id,
-      system_prompt: agent.system_prompt,
-    })
-    setDrawerReady(false)
+    setAgentName(agent.name)
+    setVoiceId(agent.voice_id)
+    setPhoneNumber(agent.phone_number ?? '')
+    setStep(3) // Jump to final step for editing
     setDrawerOpen(true)
   }
 
   function closeDrawer() {
     setDrawerOpen(false)
-    setDrawerReady(false)
     setEditing(null)
-    setForm(DEFAULT_FORM)
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.name.trim()) { toast.error('Agent name is required'); return }
-    if (!form.system_prompt.trim()) { toast.error('System prompt is required'); return }
-    if (editing) {
-      updateMut.mutate({ id: editing.id, body: form })
-    } else {
-      createMut.mutate(form)
+  function generateSystemPrompt(): string {
+    const type = AGENT_TYPES.find((t) => t.id === selectedType)
+    if (!type) return ''
+
+    const a = answers
+    switch (selectedType) {
+      case 'customer_support':
+        return `You are a friendly customer support agent for ${a.company_name || '[Company]'}.
+
+Your responsibilities:
+- Answer questions about ${a.products || 'products and services'}
+- Help with order status, returns, and general inquiries
+- Keep responses concise (under 3 sentences)
+- Be empathetic and professional
+
+When to escalate to a human:
+${a.escalation || '- Complex issues\n- Angry customers\n- Requests outside your scope'}
+
+Always greet callers warmly and confirm you've understood their question before answering.
+If you don't have information, say "Let me connect you with a specialist who can help."`
+
+      case 'sales':
+        return `You are an enthusiastic sales agent for ${a.company_name || '[Company]'}.
+
+What you're selling:
+${a.offering || '[Products/Services]'}
+
+Your goals:
+- Understand the customer's needs through questions
+- Highlight how your offerings solve their problems
+- Be honest — never oversell or make promises you can't keep
+- Guide interested customers toward next steps
+
+Pricing information:
+${a.pricing_url || 'Direct customers to speak with our team for pricing'}
+
+Always be friendly, professional, and focused on helping — not pushing.`
+
+      case 'appointment':
+        return `You are a scheduling assistant for ${a.business_name || '[Business]'}.
+
+Services offered:
+${a.services || '[Services]'}
+
+Operating hours:
+${a.hours || '[Hours]'}
+
+Your responsibilities:
+- Help callers book new appointments
+- Reschedule or cancel existing appointments
+- Collect: name, contact info, preferred date/time, service type
+- Always confirm details before finalizing
+
+Be friendly and efficient. If a requested time isn't available, offer alternatives.`
+
+      case 'it_helpdesk':
+        return `You are an IT help desk assistant for ${a.company_name || '[Company]'}.
+
+Common issues you handle:
+${a.common_issues || '- Password resets\n- Software issues\n- Connectivity problems'}
+
+Systems you support:
+${a.systems || '[Systems/Tools]'}
+
+Your approach:
+- Ask clarifying questions to understand the issue
+- Provide step-by-step guidance
+- Be patient and clear — users may not be technical
+- Escalate complex issues to the IT team
+
+If you can't resolve something, create a ticket and let the user know someone will follow up.`
+
+      default:
+        return ''
     }
   }
 
+  function handleCreate() {
+    if (!agentName.trim()) {
+      toast.error('Please enter an agent name')
+      return
+    }
+
+    const systemPrompt = generateSystemPrompt()
+    createMut.mutate({
+      name: agentName,
+      voice_id: voiceId,
+      system_prompt: systemPrompt,
+      phone_number: phoneNumber || undefined,
+      agent_type: selectedType || undefined,
+    })
+  }
+
+  function handleUpdate() {
+    if (!editing) return
+    updateMut.mutate({
+      id: editing.id,
+      body: {
+        name: agentName,
+        voice_id: voiceId,
+        phone_number: phoneNumber || null,
+      },
+    })
+  }
+
   const isSaving = createMut.isPending || updateMut.isPending
+  const currentType = AGENT_TYPES.find((t) => t.id === selectedType)
 
   return (
     <>
-      {/* ── Tutorial overlay ─────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showTutorial && (
-          <AgentTutorial
-            drawerOpen={drawerOpen}
-            drawerReady={drawerReady}
-            onComplete={() => {
-              setShowTutorial(false)
-              localStorage.setItem('agents_tutorial_done', 'true')
-              toast.success('Tutorial complete! Create your first agent 🎉')
-            }}
-            onSkip={() => {
-              setShowTutorial(false)
-              localStorage.setItem('agents_tutorial_done', 'true')
-            }}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="min-h-screen bg-[#faf9f7]">
-        {/* ── Header ─────────────────────────────────────────────────────────── */}
+        {/* Header */}
         <motion.header
-          id="agents-header"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border-b border-stone-200 bg-[#faf9f7]/95 backdrop-blur sticky top-0 z-10"
+          className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10"
         >
           <div className="container mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Bot className="h-6 w-6 text-blue-400" />
+              <Bot className="h-6 w-6 text-amber-600" />
               <h1 className="text-xl font-semibold text-stone-900">Agents</h1>
-              <Badge variant="outline" className="border-stone-300 text-stone-600 text-xs">
+              <Badge variant="secondary" className="text-xs">
                 {agents.length} agent{agents.length !== 1 ? 's' : ''}
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
-              <AgentTutorialTrigger onClick={() => setShowTutorial(true)} />
-              <Button
-                id="new-agent-btn"
-                size="sm"
-                onClick={openCreate}
-                className="bg-amber-600 hover:bg-amber-500 text-white"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                New Agent
-              </Button>
-            </div>
+            <Button onClick={openCreate} className="bg-amber-600 hover:bg-amber-500 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              New Agent
+            </Button>
           </div>
         </motion.header>
 
         <div className="container mx-auto px-6 py-8">
-          {/* ── Loading ──────────────────────────────────────────────────────── */}
+          {/* Loading */}
           {isLoading && (
             <div className="flex items-center justify-center py-24 text-stone-500">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
@@ -284,194 +324,124 @@ export default function Agents() {
             </div>
           )}
 
-          {/* ── Error state ──────────────────────────────────────────────────── */}
+          {/* Error */}
           {isError && !isLoading && (
             <div className="max-w-md mx-auto text-center py-16 space-y-3">
-              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
-                <X className="h-6 w-6 text-red-400" />
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+                <X className="h-6 w-6 text-red-600" />
               </div>
               <p className="text-stone-900 font-medium">Failed to load agents</p>
-              <p className="text-sm text-stone-500">Check your connection and API key, then try refreshing.</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-stone-300 text-stone-700 hover:text-stone-900"
-                onClick={() => qc.invalidateQueries({ queryKey: ['agents'] })}
-              >
+              <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ['agents'] })}>
                 Retry
               </Button>
             </div>
           )}
 
-          {/* ── Onboarding empty state ───────────────────────────────────────── */}
+          {/* Empty state */}
           {!isLoading && agents.length === 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="max-w-2xl mx-auto text-center py-16"
             >
-              <div className="relative w-20 h-20 mx-auto mb-6">
-                <div className="absolute inset-0 rounded-2xl bg-blue-500/20 animate-pulse" />
-                <div className="relative h-20 w-20 rounded-2xl bg-stone-100 border border-stone-300 flex items-center justify-center">
-                  <Bot className="h-10 w-10 text-blue-400" />
-                </div>
+              <div className="h-20 w-20 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-6">
+                <Bot className="h-10 w-10 text-amber-600" />
               </div>
-
-              <h2 className="text-2xl font-bold text-stone-900 mb-3">
-                Create Your First AI Agent
-              </h2>
-              <p className="text-stone-600 mb-8 leading-relaxed max-w-md mx-auto">
-                Agents are voice-powered AIs that answer calls, look up information, and take
-                actions — 24/7, without a human team. Set one up in under 2 minutes.
+              <h2 className="text-2xl font-bold text-stone-900 mb-3">Create Your First AI Agent</h2>
+              <p className="text-stone-600 mb-6 max-w-md mx-auto">
+                Answer a few questions and we'll configure an AI voice agent trained on your company documents.
               </p>
 
-              {/* 3-step mini guide */}
-              <div className="grid grid-cols-3 gap-4 mb-8 text-left">
-                {[
-                  { n: '1', icon: FileText,    label: 'Write a prompt', desc: 'Tell the agent who it is and how to behave.' },
-                  { n: '2', icon: Mic2,        label: 'Pick a voice',   desc: 'Choose from Deepgram Aura or ElevenLabs.' },
-                  { n: '3', icon: PlayCircle,  label: 'Test & deploy',  desc: 'Try it in the Playground, then assign a phone number.' },
-                ].map(({ n, icon: Icon, label, desc }) => (
-                  <div
-                    key={n}
-                    className="bg-white border border-stone-200 rounded-xl p-4 space-y-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="h-6 w-6 rounded-full bg-amber-600 text-white text-xs font-bold flex items-center justify-center">
-                        {n}
-                      </span>
-                      <Icon className="h-4 w-4 text-stone-600" />
-                    </div>
-                    <p className="text-sm font-semibold text-stone-900">{label}</p>
-                    <p className="text-xs text-stone-500 leading-relaxed">{desc}</p>
-                  </div>
-                ))}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
+                <Button onClick={openCreate} className="bg-amber-600 hover:bg-amber-500 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Agent
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/knowledge">
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Upload Company Docs First
+                  </Link>
+                </Button>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={openCreate}
-                  className="bg-amber-600 hover:bg-amber-500 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Agent
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
-                  onClick={() => setShowTutorial(true)}
-                >
-                  <ChevronRight className="h-4 w-4 mr-1" />
-                  Take a Tour First
-                </Button>
-              </div>
+              <p className="text-sm text-stone-500">
+                Tip: Upload your company policies, FAQs, and guidelines to Company Docs first.
+                <br />
+                Your agents will use these documents to answer questions accurately.
+              </p>
             </motion.div>
           )}
 
-          {/* ── Agent cards grid ─────────────────────────────────────────────── */}
+          {/* Agent grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {agents.map((agent, i) => (
-              <motion.div
-                key={agent.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card
-                  id={i === 0 ? 'agent-card-0' : undefined}
-                  className="h-full hover:shadow-lg hover:shadow-blue-900/10 transition-all duration-200 bg-white border-stone-200 hover:border-stone-300"
+            {agents.map((agent, i) => {
+              const type = AGENT_TYPES.find((t) => t.id === agent.agent_type)
+              const TypeIcon = type?.icon || Bot
+              return (
+                <motion.div
+                  key={agent.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
                 >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/20">
-                          <Bot className="h-5 w-5 text-blue-400" />
+                  <Card className="h-full hover:shadow-lg transition-shadow bg-white border-stone-200">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center ${type?.color || 'bg-stone-100 text-stone-600'}`}>
+                            <TypeIcon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base text-stone-900">{agent.name}</CardTitle>
+                            <CardDescription className="text-xs mt-0.5">
+                              {type?.label || 'Custom Agent'}
+                            </CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base text-stone-900">{agent.name}</CardTitle>
-                          <CardDescription className="text-xs flex items-center gap-1 mt-0.5 text-stone-500">
-                            <Phone className="h-3 w-3" />
-                            {agent.phone_number || <span className="italic">No phone assigned</span>}
-                          </CardDescription>
-                        </div>
+                        <Badge variant={agent.is_active ? 'default' : 'outline'} className="text-xs">
+                          {agent.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={agent.is_active ? 'default' : 'outline'}
-                        className={agent.is_active
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs'
-                          : 'border-stone-300 text-stone-500 text-xs'}
-                      >
-                        {agent.is_active ? '● Active' : '○ Inactive'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed">
-                      {agent.system_prompt || (
-                        <span className="italic text-slate-600">No system prompt set</span>
-                      )}
-                    </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-3 text-xs text-stone-500">
+                        <span className="flex items-center gap-1">
+                          <Mic2 className="h-3 w-3" />
+                          {agent.voice_id}
+                        </span>
+                        {agent.phone_number && (
+                          <>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {agent.phone_number}
+                            </span>
+                          </>
+                        )}
+                      </div>
 
-                    <div className="flex items-center gap-3 text-xs text-stone-500">
-                      <span className="flex items-center gap-1">
-                        <Mic2 className="h-3 w-3" />
-                        {agent.voice_id}
-                      </span>
-                      {agent._count !== undefined && (
-                        <>
-                          <span>·</span>
-                          <span>
-                            {agent._count.conversations} call
-                            {agent._count.conversations !== 1 ? 's' : ''}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2 pt-1">
-                      <Button
-                        id={i === 0 ? 'agent-edit-btn-0' : undefined}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(agent)}
-                        className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
-                      >
-                        <Pencil className="h-3 w-3 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        id={i === 0 ? 'agent-flow-btn-0' : undefined}
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
-                      >
-                        <Link to={`/agents/${agent.id}/flow`}>
-                          <Workflow className="h-3 w-3 mr-1" />
-                          Flow
-                        </Link>
-                      </Button>
-                      <Button
-                        id={i === 0 ? 'agent-test-btn-0' : undefined}
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="border-stone-300 text-stone-700 hover:text-stone-900 hover:bg-stone-100"
-                      >
-                        <Link to={`/agents/${agent.id}/playground`}>
-                          <PlayCircle className="h-3 w-3 mr-1" />
-                          Test
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEdit(agent)}>
+                          <Pencil className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/agents/${agent.id}/playground`}>
+                            <PlayCircle className="h-3 w-3 mr-1" />
+                            Test
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
 
-        {/* ── Side Drawer ──────────────────────────────────────────────────────── */}
+        {/* Onboarding Drawer */}
         <AnimatePresence>
           {drawerOpen && (
             <div className="fixed inset-0 z-50 flex justify-end">
@@ -479,7 +449,7 @@ export default function Agents() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/40"
                 onClick={closeDrawer}
               />
 
@@ -488,199 +458,253 @@ export default function Agents() {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                onAnimationComplete={() => setDrawerReady(true)}
-                className="relative w-full max-w-md bg-white border-l border-stone-200 shadow-2xl flex flex-col text-slate-100"
+                className="relative w-full max-w-lg bg-white shadow-2xl flex flex-col"
               >
-                {/* Drawer Header */}
+                {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-stone-200">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-blue-400" />
-                    </div>
-                    <h2 className="text-base font-semibold text-stone-900">
-                      {editing ? 'Edit Agent' : 'New Agent'}
+                  <div>
+                    <h2 className="text-lg font-semibold text-stone-900">
+                      {editing ? 'Edit Agent' : 'Create New Agent'}
                     </h2>
+                    {!editing && (
+                      <p className="text-sm text-stone-500 mt-0.5">Step {step} of 3</p>
+                    )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={closeDrawer}
-                    className="text-stone-600 hover:text-stone-900 hover:bg-stone-100"
-                  >
+                  <Button variant="ghost" size="icon" onClick={closeDrawer}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-                  <div className="p-6 space-y-6">
-
-                    {/* Agent Name */}
-                    <div id="field-name" className="space-y-1.5">
-                      <Label htmlFor="name" className="text-stone-700 flex items-center">
-                        Agent Name <span className="text-red-400 ml-0.5">*</span>
-                        <FieldHelp text="A clear internal name. Used in dashboards, logs, and analytics. E.g. 'US Sales Bot' or 'EN Support'." />
-                      </Label>
-                      <Input
-                        id="name"
-                        required
-                        value={form.name}
-                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                        placeholder="e.g. US Support Agent, Sales Bot, Appointment Scheduler"
-                        className="bg-stone-100 border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    {/* Phone Number */}
-                    <div id="field-phone" className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-stone-700 flex items-center">
-                        Phone Number
-                        <FieldHelp text="The Twilio number to assign. Callers who dial this number will be routed to this agent. Buy numbers at console.twilio.com first." />
-                      </Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
-                        <Input
-                          id="phone"
-                          value={form.phone_number}
-                          onChange={(e) =>
-                            setForm((f) => ({ ...f, phone_number: e.target.value }))
-                          }
-                          placeholder="+1 555 000 0000"
-                          className="pl-9 bg-stone-100 border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-blue-500"
+                {/* Progress bar */}
+                {!editing && (
+                  <div className="px-6 py-3 border-b border-stone-100">
+                    <div className="flex gap-2">
+                      {[1, 2, 3].map((s) => (
+                        <div
+                          key={s}
+                          className={`h-1.5 flex-1 rounded-full transition-colors ${
+                            s <= step ? 'bg-amber-500' : 'bg-stone-200'
+                          }`}
                         />
-                      </div>
-                      <p className="text-xs text-stone-500">
-                        Leave blank to test in the Playground without going live.
-                      </p>
-                    </div>
-
-                    {/* Voice */}
-                    <div id="field-voice" className="space-y-1.5">
-                      <Label htmlFor="voice" className="text-stone-700 flex items-center">
-                        Voice
-                        <FieldHelp text="Controls how the agent sounds. Use Deepgram Aura voices for low latency, or prefix with 'el_' to use an ElevenLabs voice ID." />
-                      </Label>
-
-                      {/* Quick presets */}
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {VOICE_PRESETS.map((v) => (
-                          <button
-                            key={v.id}
-                            type="button"
-                            onClick={() => setForm((f) => ({ ...f, voice_id: v.id }))}
-                            className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                              form.voice_id === v.id
-                                ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                                : 'border-stone-300 text-stone-600 hover:border-slate-500 hover:text-stone-700'
-                            }`}
-                          >
-                            {v.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="relative">
-                        <Mic2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-500" />
-                        <Input
-                          id="voice"
-                          value={form.voice_id}
-                          onChange={(e) =>
-                            setForm((f) => ({ ...f, voice_id: e.target.value }))
-                          }
-                          placeholder="aura-asteria-en  or  el_XXXXXXXX for ElevenLabs"
-                          className="pl-9 bg-stone-100 border-stone-300 text-stone-900 placeholder:text-stone-500 focus:border-blue-500 font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    {/* System Prompt */}
-                    <div id="field-prompt" className="space-y-1.5">
-                      <Label htmlFor="prompt" className="text-stone-700 flex items-center">
-                        System Prompt <span className="text-red-400 ml-0.5">*</span>
-                        <FieldHelp text="The agent's personality and instructions. Be specific: who it is, how it speaks, what it must/must not do, and when to escalate to a human." />
-                      </Label>
-
-                      {/* Starter templates — shown only when prompt is empty */}
-                      {!form.system_prompt && (
-                        <div className="space-y-1.5">
-                          <p className="text-xs text-stone-500">Start from a template:</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {PROMPT_STARTERS.map((s) => {
-                              const Icon = s.icon
-                              return (
-                                <button
-                                  key={s.label}
-                                  type="button"
-                                  onClick={() =>
-                                    setForm((f) => ({ ...f, system_prompt: s.prompt }))
-                                  }
-                                  className="text-left p-2.5 rounded-lg border border-stone-300 hover:border-blue-500/50 hover:bg-stone-100 transition-all group"
-                                >
-                                  <div className="flex items-center gap-1.5 mb-0.5">
-                                    <Icon className="h-3 w-3 text-stone-600 group-hover:text-blue-400" />
-                                    <span className="text-xs font-medium text-stone-700">
-                                      {s.label}
-                                    </span>
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      <Textarea
-                        id="prompt"
-                        required
-                        rows={8}
-                        value={form.system_prompt}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, system_prompt: e.target.value }))
-                        }
-                        placeholder={
-                          'You are a helpful support agent for Acme Corp.\n\n' +
-                          '- Greet callers: "Hi, thanks for calling Acme! How can I help?"\n' +
-                          '- Answer questions about orders, returns, and product info.\n' +
-                          '- Keep answers under 3 sentences.\n' +
-                          '- If you cannot help, say "Let me connect you with a specialist."'
-                        }
-                        className="resize-none bg-stone-100 border-stone-300 text-stone-900 placeholder:text-slate-600 focus:border-blue-500 font-mono text-sm leading-relaxed"
-                      />
-                      <div className="flex justify-between text-xs text-slate-600">
-                        <span>Replace [placeholders] with your actual values</span>
-                        <span>{form.system_prompt.length} chars</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
+                )}
 
-                  {/* Sticky footer */}
-                  <div className="sticky bottom-0 bg-white border-t border-stone-200 px-6 py-4">
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {/* Step 1: Select Type */}
+                  {!editing && step === 1 && (
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-base font-medium text-stone-900 mb-1">What type of agent do you need?</h3>
+                        <p className="text-sm text-stone-500">Select based on your primary use case</p>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {AGENT_TYPES.map((type) => {
+                          const Icon = type.icon
+                          const isSelected = selectedType === type.id
+                          return (
+                            <button
+                              key={type.id}
+                              type="button"
+                              onClick={() => setSelectedType(type.id)}
+                              className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                isSelected
+                                  ? 'border-amber-500 bg-amber-50'
+                                  : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${type.color}`}>
+                                  <Icon className="h-5 w-5" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-medium text-stone-900">{type.label}</p>
+                                    {isSelected && <Check className="h-5 w-5 text-amber-600" />}
+                                  </div>
+                                  <p className="text-sm text-stone-500 mt-0.5">{type.description}</p>
+                                </div>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Questions */}
+                  {!editing && step === 2 && currentType && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-base font-medium text-stone-900 mb-1">
+                          Tell us about your {currentType.label.toLowerCase()}
+                        </h3>
+                        <p className="text-sm text-stone-500">
+                          This helps us configure the agent's knowledge and behavior
+                        </p>
+                      </div>
+
+                      {currentType.questions.map((q) => (
+                        <div key={q.id} className="space-y-2">
+                          <Label className="text-stone-700">{q.label}</Label>
+                          <Textarea
+                            value={answers[q.id] || ''}
+                            onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                            placeholder={q.placeholder}
+                            rows={3}
+                          />
+                        </div>
+                      ))}
+
+                      <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                        <div className="flex gap-3">
+                          <FileText className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-amber-800">
+                              Company documents enhance your agent
+                            </p>
+                            <p className="text-sm text-amber-700 mt-1">
+                              Upload policies, FAQs, and guidelines to{' '}
+                              <Link to="/knowledge" className="underline font-medium">
+                                Company Docs
+                              </Link>{' '}
+                              — your agent will use them to answer questions.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Voice & Name (also used for editing) */}
+                  {(step === 3 || editing) && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-base font-medium text-stone-900 mb-1">
+                          {editing ? 'Agent Settings' : 'Final details'}
+                        </h3>
+                        <p className="text-sm text-stone-500">
+                          {editing ? 'Update your agent configuration' : 'Name your agent and select a voice'}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-stone-700">Agent Name</Label>
+                        <Input
+                          value={agentName}
+                          onChange={(e) => setAgentName(e.target.value)}
+                          placeholder="e.g. Support Agent, Sales Bot"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-stone-700">Voice</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {VOICE_PRESETS.map((v) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => setVoiceId(v.id)}
+                              className={`p-3 rounded-lg border-2 text-left transition-all ${
+                                voiceId === v.id
+                                  ? 'border-amber-500 bg-amber-50'
+                                  : 'border-stone-200 hover:border-stone-300'
+                              }`}
+                            >
+                              <p className="font-medium text-stone-900 text-sm">{v.label}</p>
+                              <p className="text-xs text-stone-500">{v.desc}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-stone-700">Phone Number (optional)</Label>
+                        <Input
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="+1 555 000 0000"
+                        />
+                        <p className="text-xs text-stone-500">
+                          Leave blank to test in Playground first. Add later to go live.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-stone-200 px-6 py-4 flex gap-3">
+                  {!editing && step > 1 && (
+                    <Button variant="outline" onClick={() => setStep((s) => s - 1)}>
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Back
+                    </Button>
+                  )}
+
+                  <div className="flex-1" />
+
+                  {!editing && step === 1 && (
                     <Button
-                      type="submit"
-                      className="w-full bg-amber-600 hover:bg-amber-500 text-white"
-                      disabled={isSaving}
+                      onClick={() => setStep(2)}
+                      disabled={!selectedType}
+                      className="bg-amber-600 hover:bg-amber-500 text-white"
+                    >
+                      Continue
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+
+                  {!editing && step === 2 && (
+                    <Button
+                      onClick={() => setStep(3)}
+                      className="bg-amber-600 hover:bg-amber-500 text-white"
+                    >
+                      Continue
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+
+                  {!editing && step === 3 && (
+                    <Button
+                      onClick={handleCreate}
+                      disabled={isSaving || !agentName.trim()}
+                      className="bg-amber-600 hover:bg-amber-500 text-white"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Creating…
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Create Agent
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {editing && (
+                    <Button
+                      onClick={handleUpdate}
+                      disabled={isSaving || !agentName.trim()}
+                      className="bg-amber-600 hover:bg-amber-500 text-white"
                     >
                       {isSaving ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           Saving…
                         </>
-                      ) : editing ? (
-                        'Save Changes'
                       ) : (
-                        <>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Agent
-                        </>
+                        'Save Changes'
                       )}
                     </Button>
-                    {!editing && (
-                      <p className="text-xs text-stone-500 text-center mt-2">
-                        You can test your agent in the Playground before assigning a phone number.
-                      </p>
-                    )}
-                  </div>
-                </form>
+                  )}
+                </div>
               </motion.div>
             </div>
           )}

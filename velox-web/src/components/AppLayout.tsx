@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Bot,
   Phone,
-  BookOpen,
   CreditCard,
   Menu,
   ChevronLeft,
@@ -16,8 +15,8 @@ import {
   Zap,
   ExternalLink,
   Play,
-  GitBranch,
   Shield,
+  FileText,
 } from 'lucide-react'
 
 // ── Nav items ──────────────────────────────────────────────────────────────────
@@ -25,9 +24,8 @@ const NAV_ITEMS = [
   { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
   { to: '/agents',     label: 'Agents',     icon: Bot },
   { to: '/playground', label: 'Playground', icon: Play },
-  { to: '/flow',       label: 'Flow',       icon: GitBranch },
   { to: '/calls',      label: 'Calls',      icon: Phone },
-  { to: '/knowledge',  label: 'Knowledge',  icon: BookOpen },
+  { to: '/knowledge',  label: 'Company Docs', icon: FileText },
   { to: '/policy',     label: 'Policy',     icon: Shield },
   { to: '/billing',    label: 'Billing',    icon: CreditCard },
 ]
