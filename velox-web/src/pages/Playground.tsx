@@ -1,16 +1,6 @@
 // src/pages/Playground.tsx
 // Per-agent playground chat page.
 // Supports both real API agents AND the demo agent (id = "demo").
-//
-// Demo mode:
-//  - Agent data loaded from localStorage (not from API)
-//  - Responses simulated locally via simulateDemoResponse()
-//  - Full conversation saved to localStorage under DEMO_CHAT_KEY
-//  - A "Demo Mode" banner is shown so users know no real API calls are made
-//
-// Save conversation:
-//  - Demo conversations auto-saved to localStorage after every message
-//  - A "Save Chat" button persists the current chat to localStorage for any agent
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
@@ -320,30 +310,30 @@ export default function Playground() {
         />
       )}
 
-      <div className="h-screen flex flex-col bg-slate-950">
+      <div className="h-screen flex flex-col bg-[#faf9f7]">
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <motion.header
           id="playground-header"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="h-14 border-b border-slate-800 bg-slate-950/95 backdrop-blur px-6 flex items-center justify-between shrink-0"
+          className="h-14 border-b border-stone-200 bg-white/80 backdrop-blur-sm px-6 flex items-center justify-between shrink-0"
         >
           {/* Left */}
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild className="h-8 text-slate-300 hover:text-white hover:bg-slate-800">
+            <Button variant="ghost" size="sm" asChild className="h-8 text-stone-600 hover:text-stone-900 hover:bg-stone-100">
               <Link to="/playground" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="text-sm font-medium">Back</span>
               </Link>
             </Button>
-            <div className="h-4 w-px bg-slate-700" />
+            <div className="h-4 w-px bg-stone-300" />
             <div className="flex items-center gap-2">
-              <Play className="h-4 w-4 text-blue-400" />
-              <h1 className="text-sm font-semibold text-white">Playground</h1>
+              <Play className="h-4 w-4 text-amber-600" />
+              <h1 className="text-sm font-semibold text-stone-900">Playground</h1>
             </div>
             {/* Demo badge */}
             {isDemo && (
-              <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs gap-1.5">
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs gap-1.5">
                 <Sparkles className="h-3 w-3" />
                 Demo Mode
               </Badge>
@@ -353,7 +343,7 @@ export default function Playground() {
           {/* Right */}
           <div className="flex items-center gap-2" id="action-buttons">
             {agent && (
-              <Badge variant="outline" className="gap-1 font-normal border-slate-700 text-slate-300">
+              <Badge variant="outline" className="gap-1 font-normal border-stone-300 text-stone-600">
                 <Zap className="h-3 w-3" />
                 {agent.name}
               </Badge>
@@ -363,11 +353,11 @@ export default function Playground() {
               size="sm"
               onClick={handleSaveChat}
               disabled={messages.length === 0}
-              className="h-8 text-slate-300 hover:text-white hover:bg-slate-800"
+              className="h-8 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
               title="Save chat (⌘S)"
             >
               {chatSaved ? (
-                <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-400" />
+                <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-600" />
               ) : (
                 <Save className="h-4 w-4 mr-1.5" />
               )}
@@ -378,7 +368,7 @@ export default function Playground() {
               size="sm"
               onClick={handleExportChat}
               disabled={messages.length === 0}
-              className="h-8 text-slate-300 hover:text-white hover:bg-slate-800"
+              className="h-8 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
             >
               <Download className="h-4 w-4 mr-1.5" />
               Export
@@ -388,7 +378,7 @@ export default function Playground() {
               size="sm"
               onClick={handleClearChat}
               disabled={messages.length === 0}
-              className="h-8 text-slate-300 hover:text-white hover:bg-slate-800"
+              className="h-8 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
             >
               <Trash2 className="h-4 w-4 mr-1.5" />
               Clear
@@ -398,9 +388,9 @@ export default function Playground() {
 
         {/* ── Demo notice banner ─────────────────────────────────────────────── */}
         {isDemo && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2 flex items-center gap-2 shrink-0">
-            <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <p className="text-xs text-amber-300">
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center gap-2 shrink-0">
+            <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            <p className="text-xs text-amber-700">
               <strong>Demo Mode:</strong> Responses are simulated locally — no real API calls are made.
               Conversations are saved automatically to your browser.
             </p>
@@ -408,7 +398,7 @@ export default function Playground() {
         )}
 
         {/* ── Main workspace ──────────────────────────────────────────────────── */}
-        <div className="flex-1 flex overflow-hidden bg-slate-950">
+        <div className="flex-1 flex overflow-hidden bg-[#faf9f7]">
           {/* Chat area */}
           <div className="flex-1 flex flex-col relative">
             <div className="flex-1 overflow-y-auto px-6">

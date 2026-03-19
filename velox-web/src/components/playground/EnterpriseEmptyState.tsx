@@ -1,6 +1,5 @@
 // src/components/playground/EnterpriseEmptyState.tsx
-// Rebuilt: dark theme, richer template cards with category chips and action hints,
-// and a "What next?" guide strip at the bottom.
+// Rebuilt with warm theme: richer template cards with category chips and action hints
 
 import { motion } from 'framer-motion'
 import {
@@ -11,7 +10,7 @@ import {
   ArrowRight,
   Bot,
   Wrench,
-  GitBranch,
+  BarChart3,
 } from 'lucide-react'
 
 // ── Template definitions ────────────────────────────────────────────────────────
@@ -36,7 +35,7 @@ const templates: Template[] = [
       'Search our documentation for information about return policies and summarize the key points.',
     icon: Search,
     category: 'RAG',
-    categoryColor: 'text-blue-400',
+    categoryColor: 'text-blue-600',
     hint: 'Tests whether the agent retrieves the right content from the knowledge base.',
   },
   {
@@ -47,7 +46,7 @@ const templates: Template[] = [
       "Hi, I placed an order last week (order #12345) and I haven't received a shipping confirmation yet. Can you help?",
     icon: MessageSquare,
     category: 'Conversation',
-    categoryColor: 'text-emerald-400',
+    categoryColor: 'text-emerald-600',
     hint: 'Tests order lookup tools and how naturally the agent handles a multi-step support request.',
   },
   {
@@ -58,7 +57,7 @@ const templates: Template[] = [
       'Check the current inventory status for wireless keyboards and let me know which models are in stock.',
     icon: Zap,
     category: 'Tools',
-    categoryColor: 'text-amber-400',
+    categoryColor: 'text-amber-600',
     hint: 'Verifies the inventory/CRM tool is wired correctly and returning live data.',
   },
   {
@@ -69,7 +68,7 @@ const templates: Template[] = [
       "I want to return a damaged product (order #98765), get a refund, and then place a new order for a replacement item.",
     icon: FileText,
     category: 'Complex',
-    categoryColor: 'text-violet-400',
+    categoryColor: 'text-violet-600',
     hint: 'Stresses the agent with a scenario that needs return, refund, and reorder tools in sequence.',
   },
 ]
@@ -86,7 +85,7 @@ const nextSteps = [
     desc: 'Try rude, vague, or off-topic messages.',
   },
   {
-    icon: GitBranch,
+    icon: BarChart3,
     label: 'Compare Agents',
     desc: 'Open a different agent to A/B test prompts.',
   },
@@ -111,13 +110,13 @@ export function EnterpriseEmptyState({ onTemplateSelect }: EnterpriseEmptyStateP
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 mb-4">
-            <Bot className="h-7 w-7 text-blue-400" />
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-amber-100 border border-amber-200 mb-4">
+            <Bot className="h-7 w-7 text-amber-600" />
           </div>
-          <h2 className="text-2xl font-semibold text-white mb-2">
+          <h2 className="text-2xl font-semibold text-stone-900 mb-2">
             Start Testing Your Agent
           </h2>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm text-stone-500 max-w-xl mx-auto leading-relaxed">
             Select a test scenario below to fire off your first message, or type anything in the
             input at the bottom. Nothing here affects live calls.
           </p>
@@ -142,29 +141,29 @@ export function EnterpriseEmptyState({ onTemplateSelect }: EnterpriseEmptyStateP
                 onClick={() => onTemplateSelect(template)}
                 className="text-left group w-full"
               >
-                <div className="h-full p-4 rounded-xl border border-slate-800 bg-slate-900 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all duration-200">
+                <div className="h-full p-4 rounded-xl border border-stone-200 bg-white hover:border-amber-300 hover:bg-amber-50/30 transition-all duration-200 hover:shadow-md">
                   {/* Top row */}
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="h-9 w-9 rounded-lg bg-slate-800 group-hover:bg-slate-700 flex items-center justify-center shrink-0 transition-colors">
-                      <Icon className="h-4 w-4 text-slate-400 group-hover:text-white transition-colors" />
+                    <div className="h-9 w-9 rounded-lg bg-stone-100 group-hover:bg-amber-100 flex items-center justify-center shrink-0 transition-colors">
+                      <Icon className="h-4 w-4 text-stone-500 group-hover:text-amber-600 transition-colors" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-sm font-semibold text-white leading-snug">
+                        <span className="text-sm font-semibold text-stone-900 leading-snug">
                           {template.title}
                         </span>
                         <span className={`text-[10px] font-mono font-semibold uppercase tracking-wide ${template.categoryColor}`}>
                           {template.category}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">
+                      <p className="text-xs text-stone-500 leading-relaxed">
                         {template.description}
                       </p>
                     </div>
                   </div>
 
                   {/* Prompt preview */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 mb-3 text-xs text-slate-400 font-mono leading-relaxed">
+                  <div className="bg-stone-50 border border-stone-100 rounded-lg p-2.5 mb-3 text-xs text-stone-600 font-mono leading-relaxed">
                     {template.prompt.length > 110
                       ? `${template.prompt.substring(0, 110)}…`
                       : template.prompt}
@@ -172,10 +171,10 @@ export function EnterpriseEmptyState({ onTemplateSelect }: EnterpriseEmptyStateP
 
                   {/* Hint + CTA */}
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs text-slate-600 italic leading-relaxed flex-1">
+                    <p className="text-xs text-stone-400 italic leading-relaxed flex-1">
                       {template.hint}
                     </p>
-                    <div className="flex items-center gap-1 text-xs text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex items-center gap-1 text-xs text-amber-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       Run
                       <ArrowRight className="h-3 w-3" />
                     </div>
@@ -191,18 +190,18 @@ export function EnterpriseEmptyState({ onTemplateSelect }: EnterpriseEmptyStateP
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="border border-slate-800 rounded-xl bg-slate-900/50 p-4"
+          className="border border-stone-200 rounded-xl bg-stone-50 p-4"
         >
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-3">
-            💡 Pro tips for better testing
+          <p className="text-xs text-stone-500 font-medium uppercase tracking-wide mb-3">
+            Pro tips for better testing
           </p>
           <div className="grid grid-cols-3 gap-4">
             {nextSteps.map(({ icon: Icon, label, desc }) => (
               <div key={label} className="flex items-start gap-2">
-                <Icon className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
+                <Icon className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-slate-300">{label}</p>
-                  <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                  <p className="text-xs font-semibold text-stone-700">{label}</p>
+                  <p className="text-xs text-stone-500 leading-relaxed">{desc}</p>
                 </div>
               </div>
             ))}

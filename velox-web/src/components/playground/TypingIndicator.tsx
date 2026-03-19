@@ -12,18 +12,18 @@ export function TypingIndicator() {
       exit={{ opacity: 0, y: -20 }}
       className="flex gap-3 p-4"
     >
-      <Avatar className="h-10 w-10 border-2 border-border">
-        <AvatarFallback>
-          <Bot className="h-5 w-5" />
+      <Avatar className="h-10 w-10 border-2 border-stone-200 bg-stone-100">
+        <AvatarFallback className="bg-stone-100">
+          <Bot className="h-5 w-5 text-amber-600" />
         </AvatarFallback>
       </Avatar>
 
-      <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
+      <div className="bg-white border border-stone-200 rounded-2xl rounded-tl-sm px-4 py-3">
         <div className="flex gap-1">
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="h-2 w-2 rounded-full bg-muted-foreground"
+              className="h-2 w-2 rounded-full bg-amber-500"
               animate={{
                 scale: [1, 1.5, 1],
                 opacity: [0.5, 1, 0.5],

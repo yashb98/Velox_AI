@@ -4,12 +4,8 @@
 //  Step 2 — Create a demo agent (pre-fills the form, user sees the values)
 //  Step 3 — Agent saved confirmation
 //  Step 4 — Explore the Playground (links to demo agent playground)
-//  Step 5 — Build a demo Flow (links to flow page)
-//  Step 6 — Set up Company Policy (links to policy page)
-//  Step 7 — Done 🎉
-//
-// The demo agent is persisted to localStorage via demoAgent.ts helpers.
-// Each step has a real "Do it" action button that performs the operation.
+//  Step 5 — Set up Company Policy (links to policy page)
+//  Step 6 — Done
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -25,12 +21,12 @@ import {
   Sparkles,
   Bot,
   Play,
-  GitBranch,
   Shield,
   CheckCircle2,
   Loader2,
   Zap,
   ArrowRight,
+  FileText,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -58,56 +54,48 @@ const STEPS: TutorialStep[] = [
     title: 'Welcome to Velox AI',
     subtitle: 'Let\'s set up your first AI voice agent in under 5 minutes.',
     icon: Zap,
-    iconColor: 'text-blue-400',
-    iconBg: 'bg-blue-500/20',
+    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-100',
   },
   {
     id: 'create-agent',
     title: 'Create Your Demo Agent',
     subtitle: 'We\'ve pre-filled a sample agent. Customise it or just click Save.',
     icon: Bot,
-    iconColor: 'text-violet-400',
-    iconBg: 'bg-violet-500/20',
+    iconColor: 'text-violet-600',
+    iconBg: 'bg-violet-100',
   },
   {
     id: 'agent-saved',
     title: 'Agent Saved!',
     subtitle: 'Your demo agent is ready. Next: test it in the Playground.',
     icon: CheckCircle2,
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-600',
+    iconBg: 'bg-emerald-100',
   },
   {
     id: 'playground',
     title: 'Test in the Playground',
     subtitle: 'Chat with your agent in a safe sandbox — no real calls made.',
     icon: Play,
-    iconColor: 'text-blue-400',
-    iconBg: 'bg-blue-500/20',
-  },
-  {
-    id: 'flow',
-    title: 'Build a Conversation Flow',
-    subtitle: 'Use the visual Flow Builder to design branching conversation logic.',
-    icon: GitBranch,
-    iconColor: 'text-amber-400',
-    iconBg: 'bg-amber-500/20',
+    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-100',
   },
   {
     id: 'policy',
     title: 'Set Up Company Policy',
     subtitle: 'Define brand voice, escalation rules, and compliance guidelines.',
     icon: Shield,
-    iconColor: 'text-violet-400',
-    iconBg: 'bg-violet-500/20',
+    iconColor: 'text-violet-600',
+    iconBg: 'bg-violet-100',
   },
   {
     id: 'done',
-    title: 'You\'re All Set! 🚀',
+    title: 'You\'re All Set!',
     subtitle: 'Your Velox AI workspace is ready. Go build something great.',
     icon: Sparkles,
-    iconColor: 'text-amber-400',
-    iconBg: 'bg-amber-500/20',
+    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-100',
   },
 ]
 
@@ -152,11 +140,6 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
     navigate(`/agents/${DEMO_AGENT_ID}/playground`)
   }
 
-  function handleGoToFlow() {
-    onClose()
-    navigate('/flow')
-  }
-
   function handleGoToPolicy() {
     onClose()
     navigate('/policy')
@@ -165,7 +148,7 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
   function handleFinish() {
     localStorage.setItem('velox_tutorial_done', 'true')
     onClose()
-    toast.success('Tutorial complete — happy building! 🎉')
+    toast.success('Tutorial complete — happy building!')
   }
 
   const next = () => {
@@ -181,30 +164,30 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
       case 'welcome':
         return (
           <div className="space-y-4">
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-stone-600 leading-relaxed">
               Velox AI lets you build, deploy, and monitor AI voice agents that handle real phone calls.
-              This tutorial will walk you through the core workflow in 5 quick steps.
+              This tutorial will walk you through the core workflow in a few quick steps.
             </p>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Bot,      label: 'Create Agent',  desc: 'Configure a voice AI' },
-                { icon: Play,     label: 'Test It',       desc: 'Chat in the Playground' },
-                { icon: GitBranch,label: 'Build Flow',    desc: 'Visual conversation logic' },
-                { icon: Shield,   label: 'Set Policy',   desc: 'Brand & compliance rules' },
+                { icon: Bot,       label: 'Create Agent',  desc: 'Configure a voice AI' },
+                { icon: Play,      label: 'Test It',       desc: 'Chat in the Playground' },
+                { icon: FileText,  label: 'Add Docs',      desc: 'Upload company knowledge' },
+                { icon: Shield,    label: 'Set Policy',    desc: 'Brand & compliance rules' },
               ].map(({ icon: Icon, label, desc }) => (
                 <div
                   key={label}
-                  className="flex items-center gap-3 bg-slate-800/60 rounded-xl p-3 border border-slate-700"
+                  className="flex items-center gap-3 bg-stone-50 rounded-xl p-3 border border-stone-200"
                 >
-                  <Icon className="h-4 w-4 text-blue-400 shrink-0" />
+                  <Icon className="h-4 w-4 text-amber-600 shrink-0" />
                   <div>
-                    <p className="text-xs font-medium text-white">{label}</p>
-                    <p className="text-xs text-slate-500">{desc}</p>
+                    <p className="text-xs font-medium text-stone-900">{label}</p>
+                    <p className="text-xs text-stone-500">{desc}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-stone-500">
               Everything created in this tutorial is stored locally and won't affect your live agents.
             </p>
           </div>
@@ -213,24 +196,24 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
       case 'create-agent':
         return (
           <div className="space-y-4">
-            <p className="text-xs text-slate-500">
-              We've pre-filled a demo agent below. Edit any field, then click <strong className="text-white">Save Demo Agent</strong>.
+            <p className="text-xs text-stone-500">
+              We've pre-filled a demo agent below. Edit any field, then click <strong className="text-stone-900">Save Demo Agent</strong>.
             </p>
 
             {/* Agent Name */}
             <div className="space-y-1.5">
-              <Label className="text-slate-300 text-xs">Agent Name <span className="text-red-400">*</span></Label>
+              <Label className="text-stone-700 text-xs">Agent Name <span className="text-red-500">*</span></Label>
               <Input
                 value={demoForm.name}
                 onChange={(e) => setDemoForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Demo Support Agent"
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 h-9 text-sm"
+                className="bg-white border-stone-300 text-stone-900 placeholder:text-stone-400 focus:border-amber-500 h-9 text-sm"
               />
             </div>
 
             {/* Voice */}
             <div className="space-y-1.5">
-              <Label className="text-slate-300 text-xs">Voice</Label>
+              <Label className="text-stone-700 text-xs">Voice</Label>
               <div className="flex flex-wrap gap-1.5">
                 {['aura-asteria-en', 'aura-luna-en', 'aura-orion-en', 'aura-arcas-en'].map((v) => (
                   <button
@@ -239,8 +222,8 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
                     onClick={() => setDemoForm((f) => ({ ...f, voice_id: v }))}
                     className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
                       demoForm.voice_id === v
-                        ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                        : 'border-slate-700 text-slate-400 hover:border-slate-500'
+                        ? 'border-amber-500 bg-amber-50 text-amber-700'
+                        : 'border-stone-300 text-stone-500 hover:border-stone-400'
                     }`}
                   >
                     {v.replace('aura-', '').replace('-en', '')}
@@ -251,21 +234,21 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
 
             {/* System Prompt */}
             <div className="space-y-1.5">
-              <Label className="text-slate-300 text-xs">System Prompt <span className="text-red-400">*</span></Label>
+              <Label className="text-stone-700 text-xs">System Prompt <span className="text-red-500">*</span></Label>
               <Textarea
                 rows={4}
                 value={demoForm.system_prompt}
                 onChange={(e) => setDemoForm((f) => ({ ...f, system_prompt: e.target.value }))}
                 placeholder="You are a helpful assistant for…"
-                className="resize-none bg-slate-800 border-slate-700 text-white placeholder:text-slate-600 focus:border-blue-500 text-xs leading-relaxed"
+                className="resize-none bg-white border-stone-300 text-stone-900 placeholder:text-stone-400 focus:border-amber-500 text-xs leading-relaxed"
               />
-              <p className="text-xs text-slate-600">{demoForm.system_prompt.length} chars</p>
+              <p className="text-xs text-stone-500">{demoForm.system_prompt.length} chars</p>
             </div>
 
             <Button
               onClick={handleSaveAgent}
               disabled={saving}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+              className="w-full bg-amber-600 hover:bg-amber-500 text-white"
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -280,26 +263,26 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
       case 'agent-saved':
         return (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-white">"{demoForm.name}" saved!</p>
-                <p className="text-xs text-slate-400">Voice: {demoForm.voice_id}</p>
+                <p className="text-sm font-semibold text-stone-900">"{demoForm.name}" saved!</p>
+                <p className="text-xs text-stone-500">Voice: {demoForm.voice_id}</p>
               </div>
             </div>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-stone-600 leading-relaxed">
               Your demo agent is stored locally and ready to test. In the next step,
               you'll open the Playground to chat with it.
             </p>
-            <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700 space-y-2">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">System Prompt Preview</p>
-              <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">{demoForm.system_prompt}</p>
+            <div className="bg-stone-50 rounded-xl p-4 border border-stone-200 space-y-2">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">System Prompt Preview</p>
+              <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed">{demoForm.system_prompt}</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setStep(1)}
-              className="w-full border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+              className="w-full border-stone-300 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
             >
               <Bot className="h-3.5 w-3.5 mr-2" />
               Edit Agent Again
@@ -310,11 +293,11 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
       case 'playground':
         return (
           <div className="space-y-4">
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-stone-600 leading-relaxed">
               The Playground lets you chat with your agent exactly as a caller would — no real calls, no cost. Try asking it a question.
             </p>
-            <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700 space-y-2">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Try these prompts</p>
+            <div className="bg-stone-50 rounded-xl p-4 border border-stone-200 space-y-2">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Try these prompts</p>
               <div className="space-y-1.5">
                 {[
                   'Hello, what can you help me with?',
@@ -323,9 +306,9 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
                 ].map((prompt) => (
                   <div
                     key={prompt}
-                    className="flex items-center gap-2 text-xs text-slate-400"
+                    className="flex items-center gap-2 text-xs text-stone-500"
                   >
-                    <ArrowRight className="h-3 w-3 text-blue-400 shrink-0" />
+                    <ArrowRight className="h-3 w-3 text-amber-600 shrink-0" />
                     <span className="italic">"{prompt}"</span>
                   </div>
                 ))}
@@ -333,57 +316,21 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
             </div>
             <Button
               onClick={handleGoToPlayground}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Open Playground →
-            </Button>
-            <p className="text-xs text-slate-500 text-center">
-              The tutorial will continue when you come back.
-            </p>
-          </div>
-        )
-
-      case 'flow':
-        return (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-300 leading-relaxed">
-              The Flow Builder is a drag-and-drop canvas where you define conversation logic — branches, conditions, handoffs, and more.
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'Start',     color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-                { label: 'Prompt',    color: 'bg-blue-500/20 text-blue-300 border-blue-500/30'    },
-                { label: 'Condition', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-                { label: 'Tool',      color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
-                { label: 'Handoff',   color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
-                { label: 'End',       color: 'bg-red-500/20 text-red-300 border-red-500/30'       },
-              ].map(({ label, color }) => (
-                <div
-                  key={label}
-                  className={`text-xs font-medium px-2 py-1.5 rounded-lg border text-center ${color}`}
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-slate-500">
-              A starter "Flow 1" with a Start node will be created automatically when you open the canvas.
-            </p>
-            <Button
-              onClick={handleGoToFlow}
               className="w-full bg-amber-600 hover:bg-amber-500 text-white"
             >
-              <GitBranch className="h-4 w-4 mr-2" />
-              Open Flow Builder →
+              <Play className="h-4 w-4 mr-2" />
+              Open Playground
             </Button>
+            <p className="text-xs text-stone-500 text-center">
+              The tutorial will continue when you come back.
+            </p>
           </div>
         )
 
       case 'policy':
         return (
           <div className="space-y-4">
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-stone-600 leading-relaxed">
               Company Policy lets you define the rules your agents must follow — tone, privacy limits, escalation triggers, and compliance requirements.
             </p>
             <div className="space-y-2">
@@ -395,12 +342,12 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
               ].map(({ label, desc }) => (
                 <div
                   key={label}
-                  className="flex items-center gap-3 bg-slate-800/60 rounded-lg px-3 py-2 border border-slate-700"
+                  className="flex items-center gap-3 bg-stone-50 rounded-lg px-3 py-2 border border-stone-200"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-violet-600 shrink-0" />
                   <div>
-                    <p className="text-xs font-medium text-white">{label}</p>
-                    <p className="text-xs text-slate-500">{desc}</p>
+                    <p className="text-xs font-medium text-stone-900">{label}</p>
+                    <p className="text-xs text-stone-500">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -410,7 +357,7 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
               className="w-full bg-violet-600 hover:bg-violet-500 text-white"
             >
               <Shield className="h-4 w-4 mr-2" />
-              Open Company Policy →
+              Open Company Policy
             </Button>
           </div>
         )
@@ -422,34 +369,34 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
               {[
                 { icon: Bot,       label: 'Demo Agent Created', done: agentSaved },
                 { icon: Play,      label: 'Playground Ready',   done: true },
-                { icon: GitBranch, label: 'Flow Builder Ready', done: true },
+                { icon: FileText,  label: 'Docs Ready',         done: true },
                 { icon: Shield,    label: 'Policy Page Ready',  done: true },
               ].map(({ icon: Icon, label, done }) => (
                 <div
                   key={label}
                   className={`flex items-center gap-2 rounded-xl p-3 border ${
                     done
-                      ? 'bg-emerald-500/10 border-emerald-500/20'
-                      : 'bg-slate-800/60 border-slate-700'
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-stone-50 border-stone-200'
                   }`}
                 >
                   {done ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                   ) : (
-                    <Icon className="h-4 w-4 text-slate-500 shrink-0" />
+                    <Icon className="h-4 w-4 text-stone-400 shrink-0" />
                   )}
-                  <p className={`text-xs font-medium ${done ? 'text-white' : 'text-slate-500'}`}>
+                  <p className={`text-xs font-medium ${done ? 'text-stone-900' : 'text-stone-500'}`}>
                     {label}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-stone-600 leading-relaxed">
               You're ready to go live. Assign a Twilio phone number to your agent and it'll start handling real calls 24/7.
             </p>
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-              <p className="text-xs text-blue-300 leading-relaxed">
-                <strong>Next step:</strong> Go to <strong>Agents</strong> → Edit your agent → add a Twilio phone number to deploy it live.
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <p className="text-xs text-amber-800 leading-relaxed">
+                <strong>Next step:</strong> Go to <strong>Agents</strong> → Create a new agent → add a Twilio phone number to deploy it live.
               </p>
             </div>
           </div>
@@ -465,17 +412,17 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.93, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93, y: 10 }}
         transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-        className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden"
       >
         {/* Top accent bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500" />
+        <div className="h-1 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-5 pb-3">
@@ -484,13 +431,13 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
               <current.icon className={`h-5 w-5 ${current.iconColor}`} />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white leading-tight">{current.title}</h2>
-              <p className="text-xs text-slate-400 mt-0.5 leading-snug">{current.subtitle}</p>
+              <h2 className="text-base font-semibold text-stone-900 leading-tight">{current.title}</h2>
+              <p className="text-xs text-stone-500 mt-0.5 leading-snug">{current.subtitle}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded shrink-0"
+            className="text-stone-400 hover:text-stone-600 transition-colors p-1 rounded shrink-0"
             aria-label="Close tutorial"
           >
             <X className="h-4 w-4" />
@@ -522,10 +469,10 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
                 onClick={() => setStep(i)}
                 className={`rounded-full transition-all duration-300 ${
                   i === step
-                    ? 'w-6 h-1.5 bg-blue-500'
+                    ? 'w-6 h-1.5 bg-amber-500'
                     : i < step
-                    ? 'w-1.5 h-1.5 bg-blue-500/50'
-                    : 'w-1.5 h-1.5 bg-slate-700'
+                    ? 'w-1.5 h-1.5 bg-amber-300'
+                    : 'w-1.5 h-1.5 bg-stone-200'
                 }`}
               />
             ))}
@@ -533,7 +480,7 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
 
           {/* Nav buttons */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-600">
+            <span className="text-xs text-stone-500">
               {step + 1} of {STEPS.length}
             </span>
             <div className="flex gap-2">
@@ -542,7 +489,7 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
                   variant="outline"
                   size="sm"
                   onClick={prev}
-                  className="h-8 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                  className="h-8 border-stone-300 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                 >
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" />
                   Back
@@ -554,7 +501,7 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
                   <Button
                     size="sm"
                     onClick={next}
-                    className="h-8 bg-blue-600 hover:bg-blue-500 text-white"
+                    className="h-8 bg-amber-600 hover:bg-amber-500 text-white"
                   >
                     Next
                     <ChevronRight className="h-3.5 w-3.5 ml-1" />
@@ -564,7 +511,7 @@ export function InteractiveTutorial({ onClose }: InteractiveTutorialProps) {
                 <Button
                   size="sm"
                   onClick={isLast ? handleFinish : next}
-                  className="h-8 bg-blue-600 hover:bg-blue-500 text-white"
+                  className="h-8 bg-amber-600 hover:bg-amber-500 text-white"
                 >
                   {isLast ? (
                     <>

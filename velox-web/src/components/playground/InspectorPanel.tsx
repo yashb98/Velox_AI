@@ -1,6 +1,5 @@
 // src/components/playground/InspectorPanel.tsx
-// Rebuilt: full dark theme (slate-900 panel), inline help text on every metric,
-// clearer section labels, and explanatory empty states.
+// Rebuilt with warm theme: full light inspector panel with clearer sections
 
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,15 +40,15 @@ function MetricHelp({ text }: { text: string }) {
         type="button"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className="text-slate-600 hover:text-slate-400 transition-colors"
+        className="text-stone-400 hover:text-stone-600 transition-colors"
         aria-label="What is this?"
       >
         <Info className="h-3 w-3" />
       </button>
       {open && (
-        <div className="absolute right-0 bottom-full mb-1.5 z-50 w-48 bg-slate-800 border border-slate-700 rounded-lg p-2 shadow-xl pointer-events-none">
-          <p className="text-xs text-slate-300 leading-relaxed">{text}</p>
-          <div className="absolute right-2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-700" />
+        <div className="absolute right-0 bottom-full mb-1.5 z-50 w-48 bg-white border border-stone-200 rounded-lg p-2 shadow-xl pointer-events-none">
+          <p className="text-xs text-stone-600 leading-relaxed">{text}</p>
+          <div className="absolute right-2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-stone-200" />
         </div>
       )}
     </span>
@@ -76,10 +75,10 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
         : msg.content.substring(0, 40) + (msg.content.length > 40 ? '…' : ''),
     color:
       msg.role === 'user'
-        ? 'text-blue-400'
+        ? 'text-blue-600'
         : msg.role === 'tool'
-        ? 'text-violet-400'
-        : 'text-emerald-400',
+        ? 'text-violet-600'
+        : 'text-emerald-600',
   }))
 
   return (
@@ -87,7 +86,7 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
       id="sidebar"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="w-80 border-l border-slate-800 bg-slate-900 overflow-y-auto"
+      className="w-80 border-l border-stone-200 bg-white overflow-y-auto"
     >
       <div className="p-5 space-y-5">
 
@@ -100,31 +99,31 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
             >
               <Circle
                 className={`h-2 w-2 fill-current ${
-                  metrics.connected ? 'text-emerald-400' : 'text-red-400'
+                  metrics.connected ? 'text-emerald-500' : 'text-red-500'
                 }`}
               />
             </motion.div>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs text-stone-500 font-medium">
               {metrics.connected ? 'Connected to API' : 'Disconnected'}
             </span>
           </div>
           {agent && (
             <Badge
               variant="outline"
-              className="border-slate-700 text-slate-400 text-xs font-normal"
+              className="border-stone-300 text-stone-600 text-xs font-normal"
             >
               {agent.name}
             </Badge>
           )}
         </div>
 
-        <Separator className="bg-slate-800" />
+        <Separator className="bg-stone-200" />
 
         {/* ── Configuration ─────────────────────────────────────────────────────── */}
-        <Card className="border-slate-800 bg-slate-900/50" id="config-card">
+        <Card className="border-stone-200 bg-stone-50" id="config-card">
           <CardHeader className="pb-3 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-slate-300 flex items-center gap-2 uppercase tracking-wide">
-              <Settings className="h-3.5 w-3.5 text-slate-500" />
+            <CardTitle className="text-xs font-semibold text-stone-700 flex items-center gap-2 uppercase tracking-wide">
+              <Settings className="h-3.5 w-3.5 text-stone-500" />
               Configuration
             </CardTitle>
           </CardHeader>
@@ -133,22 +132,22 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
               <>
                 {/* Model */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Model</span>
-                  <Badge variant="outline" className="font-mono text-xs border-slate-700 text-slate-300">
-                    Gemini 2.5 Flash
+                  <span className="text-xs text-stone-500">Model</span>
+                  <Badge variant="outline" className="font-mono text-xs border-stone-300 text-stone-700">
+                    SGLang Router
                   </Badge>
                 </div>
 
-                <Separator className="bg-slate-800" />
+                <Separator className="bg-stone-200" />
 
                 {/* Temperature */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-slate-400">Temperature</span>
+                      <span className="text-xs text-stone-600">Temperature</span>
                       <MetricHelp text="Controls creativity. Lower (0.0) = more predictable and factual. Higher (2.0) = more creative and varied." />
                     </div>
-                    <span className="text-xs font-mono text-white">{temperature}</span>
+                    <span className="text-xs font-mono text-stone-900">{temperature}</span>
                   </div>
                   <Slider
                     value={[temperature]}
@@ -158,7 +157,7 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
                     step={0.1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-600">
+                  <div className="flex justify-between text-[10px] text-stone-500">
                     <span>Precise</span>
                     <span>Creative</span>
                   </div>
@@ -168,10 +167,10 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-slate-400">Max Tokens</span>
+                      <span className="text-xs text-stone-600">Max Tokens</span>
                       <MetricHelp text="Maximum length of each AI response. 1 token ≈ 4 characters. 256 = short. 4096 = very long." />
                     </div>
-                    <span className="text-xs font-mono text-white">{maxTokens}</span>
+                    <span className="text-xs font-mono text-stone-900">{maxTokens}</span>
                   </div>
                   <Slider
                     value={[maxTokens]}
@@ -181,18 +180,18 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
                     step={256}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-600">
+                  <div className="flex justify-between text-[10px] text-stone-500">
                     <span>Short</span>
                     <span>Long</span>
                   </div>
                 </div>
 
-                <Separator className="bg-slate-800" />
+                <Separator className="bg-stone-200" />
 
                 {/* Enabled Tools */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-slate-400">Enabled Tools</span>
+                    <span className="text-xs text-stone-600">Enabled Tools</span>
                     <MetricHelp text="Tools the agent can call during conversations — e.g. order lookup, calendar booking, CRM search." />
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -201,13 +200,13 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
                         <Badge
                           key={tool}
                           variant="secondary"
-                          className="text-xs font-normal bg-slate-800 text-slate-300 border-slate-700"
+                          className="text-xs font-normal bg-stone-100 text-stone-700 border-stone-200"
                         >
                           {tool}
                         </Badge>
                       ))
                     ) : (
-                      <p className="text-xs text-slate-600 italic">
+                      <p className="text-xs text-stone-400 italic">
                         No tools enabled — add tools in the agent's settings.
                       </p>
                     )}
@@ -215,7 +214,7 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
                 </div>
               </>
             ) : (
-              <p className="text-xs text-slate-600 text-center py-4 italic">
+              <p className="text-xs text-stone-400 text-center py-4 italic">
                 No agent loaded. Navigate here from an agent card.
               </p>
             )}
@@ -223,10 +222,10 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
         </Card>
 
         {/* ── Live Metrics ──────────────────────────────────────────────────────── */}
-        <Card className="border-slate-800 bg-slate-900/50" id="stats-card">
+        <Card className="border-stone-200 bg-stone-50" id="stats-card">
           <CardHeader className="pb-3 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-slate-300 flex items-center gap-2 uppercase tracking-wide">
-              <Activity className="h-3.5 w-3.5 text-slate-500" />
+            <CardTitle className="text-xs font-semibold text-stone-700 flex items-center gap-2 uppercase tracking-wide">
+              <Activity className="h-3.5 w-3.5 text-amber-600" />
               Live Metrics
             </CardTitle>
           </CardHeader>
@@ -265,14 +264,14 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
             ].map(({ icon: Icon, label, value, help }) => (
               <div
                 key={label}
-                className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-slate-800/50 transition-colors"
+                className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-stone-100 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <Icon className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-xs text-slate-400">{label}</span>
+                  <Icon className="h-3.5 w-3.5 text-stone-500" />
+                  <span className="text-xs text-stone-600">{label}</span>
                   <MetricHelp text={help} />
                 </div>
-                <span className="text-sm font-mono font-semibold text-white">
+                <span className="text-sm font-mono font-semibold text-stone-900">
                   {value}
                 </span>
               </div>
@@ -281,19 +280,19 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
         </Card>
 
         {/* ── Event Log ────────────────────────────────────────────────────────── */}
-        <Card className="border-slate-800 bg-slate-900/50">
+        <Card className="border-stone-200 bg-stone-50">
           <CardHeader className="pb-3 pt-4 px-4">
-            <CardTitle className="text-xs font-semibold text-slate-300 flex items-center gap-2 uppercase tracking-wide">
-              <Terminal className="h-3.5 w-3.5 text-slate-500" />
+            <CardTitle className="text-xs font-semibold text-stone-700 flex items-center gap-2 uppercase tracking-wide">
+              <Terminal className="h-3.5 w-3.5 text-stone-500" />
               Event Log
-              <span className="text-[10px] text-slate-600 font-normal normal-case">
+              <span className="text-[10px] text-stone-400 font-normal normal-case">
                 (last 5)
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {eventLog.length === 0 ? (
-              <p className="text-xs text-slate-600 text-center py-4 italic">
+              <p className="text-xs text-stone-400 text-center py-4 italic">
                 Events appear here as you chat. Send a message to get started.
               </p>
             ) : (
@@ -303,11 +302,11 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
                     key={idx}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="text-xs font-mono border-l-2 border-slate-800 pl-2"
+                    className="text-xs font-mono border-l-2 border-stone-200 pl-2"
                   >
                     <div className={`font-semibold ${event.color}`}>{event.event}</div>
-                    <div className="text-slate-600 text-[10px] truncate">{event.details}</div>
-                    <div className="text-slate-700 text-[10px]">{event.time}</div>
+                    <div className="text-stone-500 text-[10px] truncate">{event.details}</div>
+                    <div className="text-stone-400 text-[10px]">{event.time}</div>
                   </motion.div>
                 ))}
               </div>
@@ -317,19 +316,19 @@ export function InspectorPanel({ agent, messages, metrics }: InspectorPanelProps
 
         {/* ── System Prompt ─────────────────────────────────────────────────────── */}
         {agent && (
-          <Card className="border-slate-800 bg-slate-900/50">
+          <Card className="border-stone-200 bg-stone-50">
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+              <CardTitle className="text-xs font-semibold text-stone-700 uppercase tracking-wide">
                 System Prompt
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="text-xs text-slate-500 bg-slate-950 border border-slate-800 p-3 rounded-lg font-mono max-h-36 overflow-y-auto leading-relaxed">
+              <div className="text-xs text-stone-600 bg-white border border-stone-200 p-3 rounded-lg font-mono max-h-36 overflow-y-auto leading-relaxed">
                 {agent.system_prompt || (
-                  <span className="text-slate-700 italic">No system prompt configured.</span>
+                  <span className="text-stone-400 italic">No system prompt configured.</span>
                 )}
               </div>
-              <p className="text-[10px] text-slate-700 mt-1.5">
+              <p className="text-[10px] text-stone-400 mt-1.5">
                 Edit this in the Agents page → Edit → System Prompt field.
               </p>
             </CardContent>

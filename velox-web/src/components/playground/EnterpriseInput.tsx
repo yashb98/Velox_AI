@@ -59,13 +59,13 @@ export function EnterpriseInput({ onSend, disabled, showSuggestions }: Enterpris
               >
                 <Badge
                   variant="outline"
-                  className="cursor-pointer hover:bg-gray-100 hover:border-gray-300 transition-colors font-normal text-gray-600"
+                  className="cursor-pointer hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors font-normal text-stone-600 border-stone-300"
                   onClick={() => {
                     setMessage(template)
                     textareaRef.current?.focus()
                   }}
                 >
-                  <Sparkles className="h-3 w-3 mr-1.5" />
+                  <Sparkles className="h-3 w-3 mr-1.5 text-amber-500" />
                   {template}
                 </Badge>
               </motion.div>
@@ -78,7 +78,7 @@ export function EnterpriseInput({ onSend, disabled, showSuggestions }: Enterpris
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        className="bg-white border border-stone-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
       >
         <div className="flex items-end gap-3 p-4">
           {/* Toolbar Icons */}
@@ -86,7 +86,7 @@ export function EnterpriseInput({ onSend, disabled, showSuggestions }: Enterpris
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-gray-600"
+              className="h-8 w-8 text-stone-400 hover:text-stone-600 hover:bg-stone-100"
               title="Attach file"
             >
               <Paperclip className="h-4 w-4" />
@@ -94,7 +94,7 @@ export function EnterpriseInput({ onSend, disabled, showSuggestions }: Enterpris
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-gray-600"
+              className="h-8 w-8 text-stone-400 hover:text-stone-600 hover:bg-stone-100"
               title="Settings"
             >
               <Settings2 className="h-4 w-4" />
@@ -109,7 +109,7 @@ export function EnterpriseInput({ onSend, disabled, showSuggestions }: Enterpris
             onKeyDown={handleKeyDown}
             placeholder="Describe your test scenario..."
             disabled={disabled}
-            className="flex-1 min-h-[48px] max-h-[200px] resize-none border-0 shadow-none focus-visible:ring-0 text-sm"
+            className="flex-1 min-h-[48px] max-h-[200px] resize-none border-0 shadow-none focus-visible:ring-0 text-sm bg-transparent text-stone-900 placeholder:text-stone-400"
           />
 
           {/* Send Button */}
@@ -117,17 +117,17 @@ export function EnterpriseInput({ onSend, disabled, showSuggestions }: Enterpris
             onClick={handleSend}
             disabled={disabled || !message.trim()}
             size="icon"
-            className="h-10 w-10 shrink-0 rounded-lg"
+            className="h-10 w-10 shrink-0 rounded-lg bg-amber-600 hover:bg-amber-500 text-white"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Helper Text */}
-        <div className="px-4 pb-3 flex items-center justify-between text-xs text-gray-500">
-          <span>⌘ + Enter to send</span>
+        <div className="px-4 pb-3 flex items-center justify-between text-xs text-stone-500">
+          <span>Enter to send · Shift+Enter for new line</span>
           {message.length > 0 && (
-            <span className="text-gray-400">{message.length} characters</span>
+            <span className="text-stone-400">{message.length} characters</span>
           )}
         </div>
       </motion.div>

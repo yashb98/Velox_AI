@@ -38,26 +38,26 @@ export function ChatMessage({ role, content, timestamp, latency, tokens }: ChatM
       {/* Avatar */}
       <Avatar className={cn(
         'h-8 w-8 shrink-0 border',
-        isTool ? 'bg-purple-100 border-purple-200' : 'border-gray-200'
+        isTool ? 'bg-violet-100 border-violet-200' : 'border-stone-200'
       )}>
-        <AvatarFallback className={isTool ? 'bg-purple-100' : 'bg-gray-100'}>
+        <AvatarFallback className={isTool ? 'bg-violet-100' : 'bg-stone-100'}>
           {isUser ? (
-            <User className="h-4 w-4 text-gray-600" />
+            <User className="h-4 w-4 text-stone-600" />
           ) : isTool ? (
-            <Wrench className="h-4 w-4 text-purple-600" />
+            <Wrench className="h-4 w-4 text-violet-600" />
           ) : (
-            <Bot className="h-4 w-4 text-gray-600" />
+            <Bot className="h-4 w-4 text-amber-600" />
           )}
         </AvatarFallback>
       </Avatar>
-      
+
       {/* Message Content */}
       <div className={cn(
         'flex flex-col gap-2 max-w-[80%]',
         isUser ? 'items-end' : 'items-start'
       )}>
         {/* Header with metadata */}
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-stone-500">
           <span className="font-medium">
             {isUser ? 'You' : isTool ? 'Tool' : 'Assistant'}
           </span>
@@ -87,14 +87,14 @@ export function ChatMessage({ role, content, timestamp, latency, tokens }: ChatM
         <div className={cn(
           'rounded-xl px-4 py-3 relative group/message',
           isUser
-            ? 'bg-gray-900 text-white'
+            ? 'bg-amber-600 text-white'
             : isTool
-            ? 'bg-purple-50 border border-purple-200 text-purple-900'
-            : 'bg-gray-100 text-gray-900'
+            ? 'bg-violet-50 border border-violet-200 text-violet-900'
+            : 'bg-white border border-stone-200 text-stone-900'
         )}>
           {/* Tool Label */}
           {isTool && (
-            <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-purple-700">
+            <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-violet-700">
               <Wrench className="h-3 w-3" />
               Tool Execution
             </div>
@@ -117,12 +117,12 @@ export function ChatMessage({ role, content, timestamp, latency, tokens }: ChatM
             size="sm"
             className={cn(
               "absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover/message:opacity-100 transition-opacity",
-              isUser ? "text-white hover:bg-gray-800" : "text-gray-600 hover:bg-gray-200"
+              isUser ? "text-white/80 hover:bg-amber-500" : "text-stone-400 hover:bg-stone-100"
             )}
             onClick={handleCopy}
           >
             {copied ? (
-              <Check className="h-3 w-3 text-green-500" />
+              <Check className="h-3 w-3 text-emerald-500" />
             ) : (
               <Copy className="h-3 w-3" />
             )}

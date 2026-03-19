@@ -1,6 +1,5 @@
 // src/components/playground/TutorialOverlay.tsx
-// Rebuilt: dark-first design, better spotlight, cleaner step descriptions,
-// "What to do" action hints, and improved positioning logic.
+// Rebuilt: warm theme, better spotlight, cleaner step descriptions
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -12,7 +11,7 @@ import { X, ChevronRight, ChevronLeft, Sparkles, Play } from 'lucide-react'
 interface TutorialStep {
   title: string
   description: string
-  action?: string   // "What to do next" call-to-action
+  action?: string
   icon: string
   target: string
   position: 'top' | 'bottom' | 'left' | 'right' | 'center'
@@ -20,7 +19,7 @@ interface TutorialStep {
 
 const tutorialSteps: TutorialStep[] = [
   {
-    title: 'Welcome to the Playground 🎮',
+    title: 'Welcome to the Playground',
     description:
       'This is your safe testing sandbox. Talk to your AI agent exactly as a caller would — without making a real phone call. Experiment freely; nothing here affects live traffic.',
     action: 'Click Next to take a quick tour of each section.',
@@ -56,11 +55,11 @@ const tutorialSteps: TutorialStep[] = [
     position: 'left',
   },
   {
-    title: 'Live Metrics 📊',
+    title: 'Live Metrics',
     description:
       'Watch these numbers update in real-time as you chat. Latency shows how fast the AI responds. Token count and estimated cost help you understand usage before you go live.',
     action: 'Send a message and watch the metrics update instantly.',
-    icon: '📈',
+    icon: '📊',
     target: 'stats-card',
     position: 'left',
   },
@@ -74,20 +73,20 @@ const tutorialSteps: TutorialStep[] = [
     position: 'top',
   },
   {
-    title: 'Type Your Own Message ✍️',
+    title: 'Type Your Own Message',
     description:
       'Use the input at the bottom to type any message. Press Enter to send. Try edge cases, unusual questions, or role-play as a difficult customer to stress-test the agent.',
     action: 'Press Shift+Enter to add a new line without sending.',
-    icon: '📝',
+    icon: '✍️',
     target: 'chat-input',
     position: 'top',
   },
   {
-    title: 'You\'re Ready to Test! 🚀',
+    title: 'You\'re Ready to Test!',
     description:
       'The Playground is your most powerful debugging tool. Use it to validate the system prompt, test tool integrations, and ensure the agent handles edge cases gracefully.',
     action: 'Start with a template card, then try your own scenarios!',
-    icon: '🎉',
+    icon: '🚀',
     target: 'playground-header',
     position: 'center',
   },
@@ -174,9 +173,9 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
                     ellipse ${rect.width + 80}px ${rect.height + 60}px at
                     ${rect.left + rect.width / 2}px ${rect.top + rect.height / 2}px,
                     transparent 45%,
-                    rgba(2,6,23,0.85) 85%
+                    rgba(28,25,23,0.85) 85%
                   )`
-                : 'rgba(2,6,23,0.85)',
+                : 'rgba(28,25,23,0.85)',
           }}
         />
 
@@ -193,8 +192,8 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
               left: rect.left - 6,
               width: rect.width + 12,
               height: rect.height + 12,
-              border: '2px solid #3b82f6',
-              boxShadow: '0 0 0 4px rgba(59,130,246,0.12), 0 0 28px rgba(59,130,246,0.45)',
+              border: '2px solid #d97706',
+              boxShadow: '0 0 0 4px rgba(217,119,6,0.12), 0 0 28px rgba(217,119,6,0.45)',
             }}
           />
         )}
@@ -247,9 +246,9 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
           className="fixed z-[60] pointer-events-auto"
           style={{ width: CARD_W, ...cardStyle() }}
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden">
             {/* Gradient accent bar */}
-            <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500" />
+            <div className="h-1 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
 
             <div className="p-6">
               {/* Header */}
@@ -257,7 +256,7 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
                 <div className="text-4xl leading-none">{step.icon}</div>
                 <button
                   onClick={onSkip}
-                  className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded"
+                  className="text-stone-400 hover:text-stone-600 transition-colors p-1 rounded"
                   aria-label="Skip tutorial"
                 >
                   <X className="h-4 w-4" />
@@ -265,20 +264,20 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
               </div>
 
               {/* Title */}
-              <h3 className="text-lg font-semibold text-white mb-2 leading-snug">
+              <h3 className="text-lg font-semibold text-stone-900 mb-2 leading-snug">
                 {step.title}
               </h3>
 
               {/* Description */}
-              <p className="text-sm text-slate-400 leading-relaxed mb-3">
+              <p className="text-sm text-stone-600 leading-relaxed mb-3">
                 {step.description}
               </p>
 
               {/* Action hint */}
               {step.action && (
-                <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 mb-4">
-                  <Play className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
-                  <p className="text-xs text-blue-300 leading-relaxed">{step.action}</p>
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                  <Play className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-800 leading-relaxed">{step.action}</p>
                 </div>
               )}
 
@@ -289,10 +288,10 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
                     key={i}
                     className={`h-1 rounded-full transition-all duration-300 ${
                       i === currentStep
-                        ? 'flex-[2] bg-blue-500'
+                        ? 'flex-[2] bg-amber-500'
                         : i < currentStep
-                        ? 'flex-1 bg-blue-500/40'
-                        : 'flex-1 bg-slate-700'
+                        ? 'flex-1 bg-amber-300'
+                        : 'flex-1 bg-stone-200'
                     }`}
                   />
                 ))}
@@ -300,7 +299,7 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
 
               {/* Navigation */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-stone-500">
                   {currentStep + 1} of {tutorialSteps.length}
                 </span>
                 <div className="flex gap-2">
@@ -309,7 +308,7 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
                       variant="outline"
                       size="sm"
                       onClick={prev}
-                      className="h-8 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                      className="h-8 border-stone-300 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
                     >
                       <ChevronLeft className="h-3 w-3 mr-1" />
                       Back
@@ -318,7 +317,7 @@ export function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
                   <Button
                     size="sm"
                     onClick={next}
-                    className="h-8 bg-blue-600 hover:bg-blue-500 text-white"
+                    className="h-8 bg-amber-600 hover:bg-amber-500 text-white"
                   >
                     {currentStep < tutorialSteps.length - 1 ? (
                       <>
