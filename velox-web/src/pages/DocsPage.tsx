@@ -1,4 +1,5 @@
 // src/pages/DocsPage.tsx — Full Velox AI in-app documentation
+// Rebuilt with warm theme matching the Claude.ai-inspired design system
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -13,7 +14,7 @@ import {
   Zap,
   Phone,
   BarChart3,
-  Database,
+  FileText,
   CreditCard,
   Shield,
   Code2,
@@ -23,7 +24,7 @@ import {
   AlertTriangle,
   Layers,
   Brain,
-  Wrench,
+  Settings,
 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -46,37 +47,37 @@ const sections: Section[] = [
     { id: 'qs-phone', label: 'Connect a phone number' },
   ]},
   { id: 'agents', label: 'Agents', icon: Bot, subsections: [
-    { id: 'agents-create', label: 'Creating agents' },
+    { id: 'agents-wizard', label: 'Onboarding wizard' },
     { id: 'agents-voice', label: 'Voice options' },
-    { id: 'agents-prompt', label: 'Writing system prompts' },
-    { id: 'agents-flow', label: 'Flow builder' },
+    { id: 'agents-prompt', label: 'System prompts' },
+    { id: 'agents-tools', label: 'Tool integrations' },
+  ]},
+  { id: 'documents', label: 'Company Documents', icon: FileText, subsections: [
+    { id: 'docs-what', label: 'What is RAG?' },
+    { id: 'docs-upload', label: 'Uploading documents' },
+    { id: 'docs-search', label: 'Hybrid search' },
+  ]},
+  { id: 'playground', label: 'Playground', icon: PlayCircle, subsections: [
+    { id: 'pg-features', label: 'Features' },
+    { id: 'pg-inspector', label: 'Inspector panel' },
+    { id: 'pg-templates', label: 'Test templates' },
   ]},
   { id: 'voice', label: 'Voice Calls', icon: Phone, subsections: [
     { id: 'voice-how', label: 'How calls work' },
     { id: 'voice-twilio', label: 'Twilio setup' },
-    { id: 'voice-ngrok', label: 'Local dev with ngrok' },
+    { id: 'voice-latency', label: 'Latency optimization' },
   ]},
-  { id: 'knowledge', label: 'Knowledge Base', icon: Database, subsections: [
-    { id: 'kb-what', label: 'What is RAG?' },
-    { id: 'kb-upload', label: 'Uploading documents' },
-    { id: 'kb-search', label: 'Hybrid search' },
-  ]},
-  { id: 'tools', label: 'Tool Integrations', icon: Wrench, subsections: [
-    { id: 'tools-list', label: 'Available tools' },
-    { id: 'tools-config', label: 'Configuring tools' },
-  ]},
-  { id: 'playground', label: 'Playground', icon: PlayCircle },
+  { id: 'policy', label: 'Company Policy', icon: Settings },
   { id: 'analytics', label: 'Analytics & Calls', icon: BarChart3 },
   { id: 'billing', label: 'Billing', icon: CreditCard },
+  { id: 'pipeline', label: 'AI Pipeline', icon: Brain },
+  { id: 'observability', label: 'Observability', icon: Layers },
   { id: 'api', label: 'API Reference', icon: Code2, subsections: [
     { id: 'api-auth', label: 'Authentication' },
     { id: 'api-agents', label: 'Agents endpoints' },
     { id: 'api-conversations', label: 'Conversations' },
     { id: 'api-docs', label: 'Documents' },
-    { id: 'api-billing', label: 'Billing' },
   ]},
-  { id: 'pipeline', label: 'AI Pipeline', icon: Brain },
-  { id: 'observability', label: 'Observability', icon: BarChart3 },
   { id: 'security', label: 'Security', icon: Shield },
 ]
 
@@ -84,28 +85,28 @@ const sections: Section[] = [
 
 function DocHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <h2 id={id} className="text-2xl font-bold text-white mt-12 mb-4 scroll-mt-24 flex items-center gap-3 group">
+    <h2 id={id} className="text-2xl font-bold text-stone-900 mt-12 mb-4 scroll-mt-24 flex items-center gap-3 group">
       {children}
-      <a href={`#${id}`} className="opacity-0 group-hover:opacity-40 text-slate-400 text-lg">#</a>
+      <a href={`#${id}`} className="opacity-0 group-hover:opacity-40 text-stone-400 text-lg">#</a>
     </h2>
   )
 }
 
 function DocSub({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <h3 id={id} className="text-lg font-semibold text-slate-100 mt-8 mb-3 scroll-mt-24">
+    <h3 id={id} className="text-lg font-semibold text-stone-800 mt-8 mb-3 scroll-mt-24">
       {children}
     </h3>
   )
 }
 
 function DocP({ children }: { children: React.ReactNode }) {
-  return <p className="text-slate-300 leading-relaxed mb-4">{children}</p>
+  return <p className="text-stone-600 leading-relaxed mb-4">{children}</p>
 }
 
 function DocCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded text-sm font-mono border border-slate-700">
+    <code className="bg-stone-100 text-amber-700 px-1.5 py-0.5 rounded text-sm font-mono border border-stone-200">
       {children}
     </code>
   )
@@ -113,16 +114,16 @@ function DocCode({ children }: { children: React.ReactNode }) {
 
 function DocBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="relative my-4 rounded-lg overflow-hidden border border-slate-700">
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+    <div className="relative my-4 rounded-xl overflow-hidden border border-stone-200 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2 bg-stone-100 border-b border-stone-200">
         <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-500/60" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-          <div className="w-3 h-3 rounded-full bg-green-500/60" />
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <div className="w-3 h-3 rounded-full bg-amber-400" />
+          <div className="w-3 h-3 rounded-full bg-emerald-400" />
         </div>
-        <span className="text-xs text-slate-500 font-mono">{lang}</span>
+        <span className="text-xs text-stone-500 font-mono">{lang}</span>
       </div>
-      <pre className="bg-slate-900 p-4 overflow-x-auto text-sm font-mono text-slate-200 leading-relaxed">
+      <pre className="bg-stone-50 p-4 overflow-x-auto text-sm font-mono text-stone-700 leading-relaxed">
         <code>{children}</code>
       </pre>
     </div>
@@ -131,13 +132,13 @@ function DocBlock({ children, lang = 'bash' }: { children: string; lang?: string
 
 function Note({ type = 'info', children }: { type?: 'info' | 'warn' | 'tip'; children: React.ReactNode }) {
   const styles = {
-    info: { bg: 'bg-blue-950/60 border-blue-500/40', icon: Info, text: 'text-blue-300', label: 'Info' },
-    warn: { bg: 'bg-amber-950/60 border-amber-500/40', icon: AlertTriangle, text: 'text-amber-300', label: 'Warning' },
-    tip:  { bg: 'bg-emerald-950/60 border-emerald-500/40', icon: CheckCircle2, text: 'text-emerald-300', label: 'Tip' },
+    info: { bg: 'bg-blue-50 border-blue-200', icon: Info, text: 'text-blue-800', label: 'Info' },
+    warn: { bg: 'bg-amber-50 border-amber-200', icon: AlertTriangle, text: 'text-amber-800', label: 'Warning' },
+    tip:  { bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle2, text: 'text-emerald-800', label: 'Tip' },
   }
   const s = styles[type]
   return (
-    <div className={`flex gap-3 p-4 rounded-lg border my-4 ${s.bg}`}>
+    <div className={`flex gap-3 p-4 rounded-xl border my-4 ${s.bg}`}>
       <s.icon className={`h-5 w-5 mt-0.5 shrink-0 ${s.text}`} />
       <div className={`text-sm ${s.text} leading-relaxed`}>{children}</div>
     </div>
@@ -149,12 +150,12 @@ function StepList({ steps }: { steps: { title: string; desc: React.ReactNode }[]
     <ol className="space-y-4 my-4">
       {steps.map((s, i) => (
         <li key={i} className="flex gap-4">
-          <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+          <div className="shrink-0 w-7 h-7 rounded-full bg-amber-600 flex items-center justify-center text-white text-sm font-bold">
             {i + 1}
           </div>
           <div>
-            <p className="font-semibold text-white">{s.title}</p>
-            <div className="text-slate-300 text-sm mt-1">{s.desc}</div>
+            <p className="font-semibold text-stone-900">{s.title}</p>
+            <div className="text-stone-600 text-sm mt-1">{s.desc}</div>
           </div>
         </li>
       ))}
@@ -164,20 +165,20 @@ function StepList({ steps }: { steps: { title: string; desc: React.ReactNode }[]
 
 function Table({ headers, rows }: { headers: string[]; rows: (string | React.ReactNode)[][] }) {
   return (
-    <div className="overflow-x-auto my-4 rounded-lg border border-slate-700">
+    <div className="overflow-x-auto my-4 rounded-xl border border-stone-200 shadow-sm">
       <table className="w-full text-sm">
-        <thead className="bg-slate-800 border-b border-slate-700">
+        <thead className="bg-stone-100 border-b border-stone-200">
           <tr>
             {headers.map(h => (
-              <th key={h} className="text-left px-4 py-3 font-semibold text-slate-200">{h}</th>
+              <th key={h} className="text-left px-4 py-3 font-semibold text-stone-700">{h}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800">
+        <tbody className="divide-y divide-stone-100 bg-white">
           {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-slate-800/50 transition-colors">
+            <tr key={i} className="hover:bg-stone-50 transition-colors">
               {row.map((cell, j) => (
-                <td key={j} className="px-4 py-3 text-slate-300">{cell}</td>
+                <td key={j} className="px-4 py-3 text-stone-600">{cell}</td>
               ))}
             </tr>
           ))}
@@ -195,22 +196,23 @@ function DocContent() {
 
       {/* ── OVERVIEW ─────────────────────────────────────────────────────────── */}
       <DocHeading id="overview">
-        <BookOpen className="h-6 w-6 text-blue-400" />
+        <BookOpen className="h-6 w-6 text-amber-600" />
         Overview
       </DocHeading>
       <DocP>
-        <strong className="text-white">Velox AI</strong> is a production-ready platform for building, deploying, and monitoring intelligent AI voice agents. Plug in a Twilio phone number, design a conversation flow, upload your knowledge base, and your AI agent starts answering real calls — with sub-2-second response times powered by Gemini 2.5 Flash.
+        <strong className="text-stone-900">Velox AI</strong> is a production-ready platform for building, deploying, and monitoring intelligent AI voice agents. Configure an agent through our guided wizard, upload your knowledge base, connect a Twilio phone number, and your AI agent starts answering real calls — with sub-800ms voice-to-voice response times.
       </DocP>
       <DocP>
-        The platform consists of four core layers:
+        The platform uses a modern, vendor-agnostic architecture:
       </DocP>
       <Table
         headers={['Layer', 'Technology', 'What it does']}
         rows={[
-          ['Frontend', 'React 19 + Vite', 'Dashboard, flow builder, playground, billing UI'],
-          ['API', 'Node.js + Express + Prisma', 'REST endpoints, WebSocket call handling, Twilio webhooks'],
-          ['Agents', 'Python + FastAPI + Google ADK', 'Multi-agent LLM routing pipeline'],
-          ['Infra', 'PostgreSQL + Redis + Docker', 'Data persistence, call-state cache, local dev stack'],
+          ['Frontend', 'React 19 + Vite + TailwindCSS', 'Dashboard, agent wizard, playground, billing UI'],
+          ['API', 'Node.js + Express + Prisma', 'REST endpoints, webhooks, multi-tenant data layer'],
+          ['Voice', 'Pipecat + Daily.co WebRTC', 'Real-time voice pipeline with VAD and turn detection'],
+          ['Agents', 'LangGraph + SGLang', 'Multi-tier LLM routing with sub-200ms TTFT'],
+          ['Infra', 'PostgreSQL + Redis + Docker', 'Data persistence, state cache, containerized stack'],
         ]}
       />
       <Note type="tip">
@@ -219,7 +221,7 @@ function DocContent() {
 
       {/* ── QUICK START ──────────────────────────────────────────────────────── */}
       <DocHeading id="quickstart">
-        <Zap className="h-6 w-6 text-amber-400" />
+        <Zap className="h-6 w-6 text-amber-600" />
         Quick Start
       </DocHeading>
 
@@ -236,45 +238,54 @@ cd Velox_AI`}</DocBlock>,
         },
         {
           title: 'Fill in API keys',
-          desc: <>Open <DocCode>.env</DocCode> and add the required keys. See the <a href="#api-auth" className="text-blue-400 underline underline-offset-2">Environment Variables</a> section for the full reference.</>,
+          desc: <>Open <DocCode>.env</DocCode> and add the required keys. The minimum required: <DocCode>DATABASE_URL</DocCode>, <DocCode>CLERK_SECRET_KEY</DocCode>, and <DocCode>KIMI_API_KEY</DocCode> (free tier LLM).</>,
         },
         {
           title: 'Start the full stack',
-          desc: <DocBlock lang="bash">{`docker compose --profile mlflow up --build`}</DocBlock>,
+          desc: <DocBlock lang="bash">{`docker compose up --build`}</DocBlock>,
         },
         {
           title: 'Open in browser',
-          desc: <>Navigate to <DocCode>http://localhost:5173</DocCode> for the dashboard and <DocCode>http://localhost:5001</DocCode> for MLflow.</>,
+          desc: <>Navigate to <DocCode>http://localhost:5173</DocCode> for the dashboard.</>,
         },
       ]} />
+      <Note type="info">
+        For the free-tier setup with Neon PostgreSQL, Upstash Redis, and Kimi LLM, use <DocCode>docker-compose.free-tier.yml</DocCode> instead.
+      </Note>
 
       <DocSub id="qs-first-agent">2. Create your first agent</DocSub>
+      <DocP>
+        Velox AI uses a guided <strong className="text-stone-900">onboarding wizard</strong> to create agents. This ensures all required configuration is captured step-by-step.
+      </DocP>
       <StepList steps={[
-        { title: 'Sign in', desc: 'Click Sign In on the landing page. Clerk handles authentication.' },
-        { title: 'Go to Agents', desc: <>Navigate to <strong className="text-white">/agents</strong> and click <strong className="text-white">New Agent</strong>.</> },
+        { title: 'Sign in', desc: 'Click Sign In on the landing page. Clerk handles authentication with email/password or OAuth.' },
+        { title: 'Go to Agents', desc: <>Navigate to <strong className="text-stone-900">/agents</strong> and click <strong className="text-stone-900">+ New Agent</strong>.</> },
         {
-          title: 'Fill in the agent form',
+          title: 'Complete the wizard',
           desc: (
-            <Table
-              headers={['Field', 'Description', 'Example']}
-              rows={[
-                ['Name', 'Human-readable agent name', 'Support Bot'],
-                ['Phone Number', 'Twilio number to assign (optional for testing)', '+1 555 000 0000'],
-                ['Voice ID', 'Deepgram Aura or ElevenLabs voice', 'aura-asteria-en'],
-                ['System Prompt', 'Instructions defining the agent\'s behaviour', 'You are a helpful support agent for Acme Corp…'],
-              ]}
-            />
+            <>
+              <p className="mb-2">The wizard walks you through 4 steps:</p>
+              <Table
+                headers={['Step', 'What you configure']}
+                rows={[
+                  ['1. Identity', 'Agent name and primary purpose (Sales, Support, etc.)'],
+                  ['2. Personality', 'Tone of voice, response style, and brand persona'],
+                  ['3. Knowledge', 'Connect to your Company Documents (RAG)'],
+                  ['4. Tools', 'Enable integrations (CRM, calendar, order lookup)'],
+                ]}
+              />
+            </>
           ),
         },
-        { title: 'Save', desc: 'Click Create Agent. The agent is now live and ready to test.' },
+        { title: 'Save & Test', desc: 'Click Create Agent. You\'re automatically redirected to the Playground to test it.' },
       ]} />
 
       <DocSub id="qs-test">3. Test in Playground</DocSub>
       <DocP>
-        On the Agents page, click the <strong className="text-white">Test</strong> button on any agent card. The Playground opens — type messages as if you were a caller. You'll see the AI response in real time along with latency, token counts, and any tool calls made.
+        The <strong className="text-stone-900">Playground</strong> is your sandbox for testing agents before going live. Type messages as if you were a caller and see how your agent responds in real-time.
       </DocP>
       <Note type="tip">
-        Press <DocCode>Cmd+K</DocCode> (or <DocCode>Ctrl+K</DocCode>) to clear the conversation. Press <DocCode>Cmd+E</DocCode> to export the chat as JSON.
+        Press <DocCode>Cmd+K</DocCode> (Mac) or <DocCode>Ctrl+K</DocCode> (Windows) to clear the conversation. Press <DocCode>Cmd+E</DocCode> to export the chat as JSON for debugging.
       </Note>
 
       <DocSub id="qs-phone">4. Connect a phone number</DocSub>
@@ -286,54 +297,52 @@ cd Velox_AI`}</DocBlock>,
           title: 'Set the webhook',
           desc: <>In Twilio Console → Phone Number → Voice → A Call Comes In, set the URL to:<br /><DocCode>https://abc123.ngrok.io/voice/incoming</DocCode></>,
         },
-        { title: 'Add the Twilio auth token', desc: <>Set <DocCode>TWILIO_AUTH_TOKEN</DocCode> in your <DocCode>.env</DocCode> and restart the API container.</> },
+        { title: 'Add credentials to .env', desc: <>Set <DocCode>TWILIO_AUTH_TOKEN</DocCode> and <DocCode>TWILIO_ACCOUNT_SID</DocCode> then restart the containers.</> },
         { title: 'Call the number', desc: 'Your AI agent will answer live!' },
       ]} />
 
       {/* ── AGENTS ───────────────────────────────────────────────────────────── */}
       <DocHeading id="agents">
-        <Bot className="h-6 w-6 text-violet-400" />
+        <Bot className="h-6 w-6 text-violet-600" />
         Agents
       </DocHeading>
 
-      <DocSub id="agents-create">Creating and managing agents</DocSub>
+      <DocSub id="agents-wizard">Onboarding wizard</DocSub>
       <DocP>
-        An <strong className="text-white">agent</strong> is the core entity in Velox AI. Each agent has its own identity, voice, system prompt, and optionally a dedicated phone number. You can create as many agents as your plan allows.
-      </DocP>
-      <DocP>
-        From <strong className="text-white">Agents → New Agent</strong> you can set:
+        Every agent in Velox AI is created through a guided wizard that ensures proper configuration. The wizard covers:
       </DocP>
       <Table
-        headers={['Property', 'Required', 'Description']}
+        headers={['Step', 'Fields', 'Why it matters']}
         rows={[
-          ['Name', 'Yes', 'Display name shown in the dashboard'],
-          ['Phone Number', 'No', 'Twilio number that triggers this agent on inbound calls'],
-          ['Voice ID', 'Yes', 'TTS voice (see Voice options below)'],
-          ['System Prompt', 'Yes', 'Full instructions for the AI — persona, scope, rules'],
-          ['Is Active', 'Auto', 'Toggle to enable/disable without deleting'],
+          ['Identity', 'Name, Purpose, Phone Number', 'Defines who the agent is and what calls it handles'],
+          ['Personality', 'Tone, Response Length, Persona', 'Shapes how the agent sounds and communicates'],
+          ['Knowledge', 'Document Collections', 'Connects RAG for accurate, grounded answers'],
+          ['Tools', 'CRM, Calendar, Order Lookup, etc.', 'Enables actions beyond just conversation'],
         ]}
       />
+      <DocP>
+        After creation, you can edit any agent from the Agents page by clicking <strong className="text-stone-900">Edit</strong> on the agent card.
+      </DocP>
 
       <DocSub id="agents-voice">Voice options</DocSub>
       <DocP>
-        Velox AI supports two TTS providers:
+        Velox AI supports multiple TTS providers for natural-sounding voice output:
       </DocP>
       <Table
         headers={['Provider', 'Voice ID format', 'Quality', 'Latency']}
         rows={[
-          ['Deepgram Aura', 'aura-asteria-en', 'High', '~200ms'],
-          ['Deepgram Aura', 'aura-luna-en', 'High', '~200ms'],
-          ['Deepgram Aura', 'aura-orion-en', 'High', '~200ms'],
-          ['ElevenLabs', 'el_VOICE_ID (prefix with el_)', 'Ultra-high', '~400ms'],
+          ['Cartesia Sonic', 'sonic-english-anna', 'Ultra-high', '~75ms TTFB'],
+          ['Deepgram Aura', 'aura-asteria-en', 'High', '~150ms'],
+          ['ElevenLabs Flash', 'el_VOICE_ID', 'Ultra-high', '~200ms'],
         ]}
       />
       <Note type="info">
-        Any voice ID starting with <DocCode>el_</DocCode> is automatically routed to ElevenLabs. Set <DocCode>ELEVENLABS_API_KEY</DocCode> in your <DocCode>.env</DocCode> to enable it.
+        Voice IDs starting with <DocCode>el_</DocCode> route to ElevenLabs. Set <DocCode>ELEVENLABS_API_KEY</DocCode> in your <DocCode>.env</DocCode> to enable it.
       </Note>
 
-      <DocSub id="agents-prompt">Writing system prompts</DocSub>
+      <DocSub id="agents-prompt">System prompts</DocSub>
       <DocP>
-        The system prompt is the most important part of your agent configuration. It defines who the agent is, what it can do, and how it should behave.
+        The system prompt defines your agent's behavior. For voice agents, keep responses short and conversational:
       </DocP>
       <DocBlock lang="text">{`You are Alex, a friendly customer support agent for Acme Corp.
 
@@ -343,403 +352,381 @@ PERSONA
 - Never mention you are an AI unless directly asked
 
 CAPABILITIES
-- Look up order status (use the check_order_status tool)
-- Check product availability (use check_item_stock)
-- Book appointments (use book_appointment)
-- Transfer to a human agent if the customer is upset or requests it
+- Look up order status using the check_order_status tool
+- Check product availability with check_item_stock
+- Book appointments using book_appointment
+- Transfer to a human if the customer requests it
 
 RULES
-- Never make up order status information
-- Always confirm the customer's name before looking up their account
-- If unsure, say "Let me check on that for you" and use a tool`}</DocBlock>
+- Never make up order information — always use tools
+- Confirm the customer's name before looking up their account
+- If unsure, say "Let me check on that for you"`}</DocBlock>
       <Note type="tip">
-        Keep voice responses short. The AI is speaking aloud, not writing an email. Aim for 1–3 sentences per turn.
+        Voice responses should be 1–3 sentences. The AI is speaking aloud, not writing an email.
       </Note>
 
-      <DocSub id="agents-flow">Flow builder</DocSub>
+      <DocSub id="agents-tools">Tool integrations</DocSub>
       <DocP>
-        The <strong className="text-white">Flow Builder</strong> is a visual drag-and-drop editor for designing multi-step conversation flows. Navigate to an agent and click <strong className="text-white">Flow</strong> to open it.
+        Tools let your agent take real actions — looking up orders, booking appointments, checking stock. Configure tools in the agent wizard or edit page.
       </DocP>
+      <Table
+        headers={['Tool', 'What it does', 'Config required']}
+        rows={[
+          ['Order Lookup', 'Retrieves order status and tracking', 'ORDER_API_URL'],
+          ['Inventory Check', 'Checks product availability', 'INVENTORY_API_URL'],
+          ['Appointment Booking', 'Schedules callbacks or visits', 'CALENDAR_API_URL'],
+          ['Customer Profile', 'Fetches account history', 'CRM_API_URL'],
+          ['Human Handoff', 'Transfers to live agent', 'HANDOFF_API_URL'],
+          ['Knowledge Search', 'Searches your documents', 'Auto-enabled'],
+        ]}
+      />
+
+      {/* ── COMPANY DOCUMENTS ───────────────────────────────────────────────── */}
+      <DocHeading id="documents">
+        <FileText className="h-6 w-6 text-emerald-600" />
+        Company Documents
+      </DocHeading>
+
+      <DocSub id="docs-what">What is RAG?</DocSub>
       <DocP>
-        You can create nodes for:
+        <strong className="text-stone-900">Retrieval-Augmented Generation (RAG)</strong> lets your AI agent answer questions using your own documents instead of relying solely on training data. When a caller asks a question, Velox AI searches your document library for relevant content and includes it in the AI's context — resulting in accurate, grounded answers.
       </DocP>
-      <ul className="list-disc list-inside text-slate-300 space-y-1 mb-4 ml-2">
-        <li><strong className="text-white">Prompt nodes</strong> — LLM response with custom instructions</li>
-        <li><strong className="text-white">Condition nodes</strong> — branch based on intent or slot values</li>
-        <li><strong className="text-white">Tool nodes</strong> — call an external API (order lookup, booking, etc.)</li>
-        <li><strong className="text-white">Handoff nodes</strong> — transfer to a human agent</li>
-        <li><strong className="text-white">End nodes</strong> — gracefully close the call</li>
-      </ul>
+
+      <DocSub id="docs-upload">Uploading documents</DocSub>
+      <StepList steps={[
+        { title: 'Go to Company Documents', desc: <>Navigate to <DocCode>/documents</DocCode> in the dashboard.</> },
+        {
+          title: 'Upload your files',
+          desc: <>Drag and drop files or click to browse. Supported formats: <DocCode>.pdf</DocCode>, <DocCode>.txt</DocCode>, <DocCode>.docx</DocCode>, <DocCode>.md</DocCode></>,
+        },
+        {
+          title: 'Processing happens automatically',
+          desc: 'Documents are chunked, embedded, and indexed. You\'ll see a progress indicator during processing.',
+        },
+        {
+          title: 'Connect to agents',
+          desc: 'When creating or editing an agent, select which document collections to use in the Knowledge step.',
+        },
+      ]} />
+      <Note type="info">
+        Duplicate chunks are automatically detected and skipped. Large documents are split into ~500-token chunks for optimal retrieval.
+      </Note>
+
+      <DocSub id="docs-search">Hybrid search</DocSub>
+      <DocP>
+        Velox AI uses <strong className="text-stone-900">2-tier hybrid search</strong> optimized for voice latency:
+      </DocP>
+      <Table
+        headers={['Tier', 'Method', 'Latency', 'Use case']}
+        rows={[
+          ['Fast', 'Qdrant vector + BM25 keyword', '<100ms', 'Most queries — product names, order IDs, FAQs'],
+          ['Complex', 'LangGraph agentic + HyDE', '<500ms', 'Multi-hop reasoning, complex policy questions'],
+        ]}
+      />
+
+      {/* ── PLAYGROUND ───────────────────────────────────────────────────────── */}
+      <DocHeading id="playground">
+        <PlayCircle className="h-6 w-6 text-cyan-600" />
+        Playground
+      </DocHeading>
+      <DocP>
+        The Playground is your testing sandbox — chat with any agent exactly as a caller would, without making real phone calls.
+      </DocP>
+
+      <DocSub id="pg-features">Features</DocSub>
+      <Table
+        headers={['Feature', 'How to use']}
+        rows={[
+          ['Send messages', 'Type in the input box and press Enter or click Send'],
+          ['View tool calls', 'Tool executions appear as purple cards in the conversation'],
+          ['Clear chat', 'Cmd+K (Mac) / Ctrl+K (Windows) or the Clear button'],
+          ['Export conversation', 'Cmd+E downloads the full chat as JSON'],
+          ['Template cards', 'Click any template to fire a pre-built test scenario'],
+        ]}
+      />
+
+      <DocSub id="pg-inspector">Inspector panel</DocSub>
+      <DocP>
+        The right sidebar shows real-time metrics and configuration:
+      </DocP>
+      <Table
+        headers={['Section', 'What it shows']}
+        rows={[
+          ['Configuration', 'Model, temperature, max tokens, enabled tools'],
+          ['Live Metrics', 'Messages, avg latency, total tokens, estimated cost'],
+          ['Event Log', 'Last 5 events (messages, tool calls) with timestamps'],
+          ['System Prompt', 'The agent\'s full system prompt for reference'],
+        ]}
+      />
+
+      <DocSub id="pg-templates">Test templates</DocSub>
+      <DocP>
+        The Playground includes 4 pre-built test scenarios:
+      </DocP>
+      <Table
+        headers={['Template', 'Tests']}
+        rows={[
+          ['Test Knowledge Base', 'RAG retrieval from your documents'],
+          ['Simulate Customer Call', 'Multi-turn conversation flow'],
+          ['Check Tool Integrations', 'Tool execution and API connections'],
+          ['Multi-Step Workflow', 'Complex scenarios requiring multiple tools'],
+        ]}
+      />
 
       {/* ── VOICE CALLS ──────────────────────────────────────────────────────── */}
       <DocHeading id="voice">
-        <Phone className="h-6 w-6 text-emerald-400" />
+        <Phone className="h-6 w-6 text-emerald-600" />
         Voice Calls
       </DocHeading>
 
       <DocSub id="voice-how">How calls work end-to-end</DocSub>
       <DocP>
-        When someone calls your Twilio number, the following happens:
+        When someone calls your Twilio number, here's the complete flow:
       </DocP>
       <DocBlock lang="text">{`1.  Twilio PSTN → POST /voice/incoming
-      └── API returns TwiML: <Connect><Stream url="wss://…/media-stream?orgId=…" />
+      └── Returns TwiML connecting to Daily.co WebRTC room
 
-2.  Twilio → WebSocket upgrade to /media-stream
-      └── API checks billing BEFORE handshake (returns 402 if no credits)
+2.  Pipecat voice pipeline starts
+      └── Silero VAD detects speech
+      └── Deepgram/Ultravox STT transcribes in real-time
 
-3.  Audio stream opens (mulaw 8kHz, 20ms chunks)
-      └── Deepgram STT Nova-2 transcribes in real time
+3.  Transcript → LangGraph agent
+      └── T0 Router classifies intent (<30ms)
+      └── Routes to appropriate model tier:
+          T1 Fast:   Nemotron Nano    (~100ms TTFT)
+          T2 Medium: Qwen3.5-35B      (~200ms TTFT)
+          T3 Heavy:  Kimi K2.5 API    (~500ms TTFT)
 
-4.  Final transcript fires → orchestrator.ts
-      └── Builds context: system prompt + RAG results + conversation history
-      └── Sends to Google ADK agents pipeline (POST /generate on :8002)
+4.  Tool calls (if needed)
+      └── Executed in parallel when possible
+      └── Results injected back to LLM
 
-5.  ADK routes intelligently:
-      Phi-3 SLM  → simple FAQs, yes/no, short answers  (~50ms)
-      Gemini Flash → multi-turn, tool calls, reasoning  (~400ms)
-      Gemini Pro  → complex decisions, escalations      (~900ms)
+5.  Response → TTS (Cartesia Sonic)
+      └── ~75ms TTFB, streamed back to caller
 
-6.  Tool call detected → registry.ts executes tool → result injected back
-
-7.  Final response → TTS (Deepgram Aura or ElevenLabs)
-      └── mulaw 8kHz audio streamed back to Twilio → caller hears response
-
-8.  Call ends → DB write (cost, sentiment, duration) + Prometheus metrics`}</DocBlock>
+6.  Call ends → metrics logged
+      └── Duration, cost, sentiment, transcript saved`}</DocBlock>
 
       <DocSub id="voice-twilio">Twilio setup</DocSub>
       <StepList steps={[
-        { title: 'Create a Twilio account', desc: <>Sign up at twilio.com. Free trial gives you $15 credit.</> },
-        { title: 'Buy a phone number', desc: <>Console → Phone Numbers → Manage → Buy a Number. Choose a local or toll-free number.</> },
+        { title: 'Create a Twilio account', desc: <>Sign up at twilio.com. Free trial includes credit to get started.</> },
+        { title: 'Buy a phone number', desc: <>Console → Phone Numbers → Buy a Number. Choose local or toll-free.</> },
         {
           title: 'Configure the webhook',
           desc: <>
-            Phone Numbers → Manage → Active Numbers → click your number.<br />
-            Under <strong className="text-white">Voice Configuration</strong> → A Call Comes In:<br />
+            Phone Numbers → Active Numbers → select your number.<br />
+            Under <strong className="text-stone-900">Voice Configuration</strong>:<br />
             <DocCode>https://your-domain.com/voice/incoming</DocCode>
           </>,
         },
-        { title: 'Add credentials to .env', desc: <DocBlock lang="env">{`TWILIO_AUTH_TOKEN=your_auth_token_here`}</DocBlock> },
+        { title: 'Add credentials', desc: <DocBlock lang="env">{`TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token`}</DocBlock> },
       ]} />
 
-      <DocSub id="voice-ngrok">Local dev with ngrok</DocSub>
+      <DocSub id="voice-latency">Latency optimization</DocSub>
       <DocP>
-        Twilio needs a public HTTPS URL to send webhooks. Use ngrok to tunnel your local port 8080:
-      </DocP>
-      <DocBlock lang="bash">{`# Install ngrok from https://ngrok.com/download
-ngrok http 8080
-
-# Output:
-# Forwarding  https://abc123.ngrok.io -> http://localhost:8080
-
-# Set this in Twilio → Voice webhook:
-# https://abc123.ngrok.io/voice/incoming`}</DocBlock>
-      <Note type="warn">
-        ngrok URLs change every restart on the free plan. Use ngrok's reserved domains or a paid plan for stable URLs.
-      </Note>
-
-      {/* ── KNOWLEDGE BASE ───────────────────────────────────────────────────── */}
-      <DocHeading id="knowledge">
-        <Database className="h-6 w-6 text-rose-400" />
-        Knowledge Base
-      </DocHeading>
-
-      <DocSub id="kb-what">What is RAG?</DocSub>
-      <DocP>
-        <strong className="text-white">Retrieval-Augmented Generation (RAG)</strong> lets your AI agent answer questions using your own documents instead of only its training data. When a caller asks a question, Velox AI searches your knowledge base for relevant text and injects it into the prompt — so the agent can give accurate, up-to-date answers grounded in your actual content.
-      </DocP>
-
-      <DocSub id="kb-upload">Uploading documents</DocSub>
-      <StepList steps={[
-        { title: 'Go to Knowledge Bases', desc: <>Navigate to <DocCode>/knowledge</DocCode> in the dashboard.</> },
-        { title: 'Select a knowledge base', desc: 'Click on the KB card you want to upload to. It will be highlighted.' },
-        {
-          title: 'Upload your document',
-          desc: <>Click <strong className="text-white">Upload to this KB</strong> or use the top upload panel. Supported formats: <DocCode>.pdf</DocCode>, <DocCode>.txt</DocCode></>,
-        },
-        {
-          title: 'Wait for processing',
-          desc: 'The document is chunked into ~500-token pieces, embedded using Gemini text-embedding-004, and stored in PostgreSQL with vector indexes.',
-        },
-      ]} />
-      <Note type="info">
-        Duplicate chunks are automatically detected and skipped. The upload result shows how many chunks were added vs skipped.
-      </Note>
-
-      <DocSub id="kb-search">Hybrid search</DocSub>
-      <DocP>
-        Every query against your knowledge base uses <strong className="text-white">hybrid search</strong> — a combination of:
-      </DocP>
-      <ul className="list-disc list-inside text-slate-300 space-y-2 mb-4 ml-2">
-        <li><strong className="text-white">Keyword search (BM25)</strong> — finds exact term matches, great for product names and order IDs</li>
-        <li><strong className="text-white">Semantic search (vector)</strong> — finds conceptually similar content, great for paraphrased questions</li>
-      </ul>
-      <DocP>
-        The results from both are merged, re-ranked, and the top chunks are injected into the LLM context window for each agent response.
-      </DocP>
-
-      {/* ── TOOLS ────────────────────────────────────────────────────────────── */}
-      <DocHeading id="tools">
-        <Wrench className="h-6 w-6 text-orange-400" />
-        Tool Integrations
-      </DocHeading>
-
-      <DocSub id="tools-list">Available tools</DocSub>
-      <DocP>
-        Tools let your AI agent take real actions — looking up orders, booking appointments, checking stock — by calling your existing APIs. Velox AI ships with 6 built-in tool schemas:
+        Velox AI targets <strong className="text-stone-900">sub-800ms voice-to-voice latency</strong>. Here's the budget breakdown:
       </DocP>
       <Table
-        headers={['Tool', 'Trigger phrase examples', 'Requires', 'Returns']}
+        headers={['Stage', 'Target', 'Optimization']}
         rows={[
-          ['check_order_status', '"Where is my order?" / "Order #12345"', 'ORDER_API_URL', 'Status, tracking, ETA'],
-          ['check_item_stock', '"Is the blue widget in stock?"', 'INVENTORY_API_URL', 'Quantity, availability'],
-          ['book_appointment', '"Book a callback" / "Schedule a visit"', 'CALENDAR_API_URL', 'Confirmation ID, time'],
-          ['get_customer_profile', '"Look up my account" / "My name is Jane"', 'CRM_API_URL', 'Name, history, tier'],
-          ['transfer_to_agent', '"Speak to a human" / frustrated tone', 'HANDOFF_API_URL', 'Transfer confirmation'],
-          ['search_knowledge_base', 'Any FAQ or product question', 'FAQ_KB_ID', 'Relevant text chunks'],
+          ['Turn Detection', '<75ms', 'Silero VAD + semantic end-of-turn classifier'],
+          ['STT', '<100ms', 'Streaming transcription, or 0ms with Ultravox'],
+          ['LLM TTFT', '<200ms', 'SGLang with RadixAttention prefix caching'],
+          ['TTS TTFB', '<75ms', 'Cartesia Sonic streaming'],
+          ['PSTN overhead', '~300ms', 'Unavoidable, built into budget'],
         ]}
       />
 
-      <DocSub id="tools-config">Configuring tools</DocSub>
-      <DocP>
-        Set the corresponding environment variable in your <DocCode>.env</DocCode> to enable each tool. Tools without a URL set are silently disabled — the agent won't attempt to call them.
-      </DocP>
-      <DocBlock lang="env">{`# Tool integrations — set the API endpoint for each tool you want to enable
-ORDER_API_URL=https://api.yourstore.com/orders
-ORDER_API_KEY=your_api_key
-
-INVENTORY_API_URL=https://api.yourstore.com/inventory
-CALENDAR_API_URL=https://calendar.yourapp.com/appointments
-CRM_API_URL=https://crm.yourapp.com/customers
-HANDOFF_API_URL=https://queue.yourcc.com/transfer
-
-# Knowledge base UUID (get from /knowledge page)
-FAQ_KB_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</DocBlock>
-      <Note type="tip">
-        Your API endpoints don't need to follow any specific schema — only the environment variable URL matters. Velox AI POSTs structured JSON to each URL and expects a JSON response.
-      </Note>
-
-      {/* ── PLAYGROUND ───────────────────────────────────────────────────────── */}
-      <DocHeading id="playground">
-        <PlayCircle className="h-6 w-6 text-cyan-400" />
-        Playground
+      {/* ── COMPANY POLICY ────────────────────────────────────────────────────── */}
+      <DocHeading id="policy">
+        <Settings className="h-6 w-6 text-amber-600" />
+        Company Policy
       </DocHeading>
       <DocP>
-        The Playground lets you chat with any agent as if you were a caller — without needing a phone. It's the fastest way to test and iterate on your system prompt and tools.
+        The <strong className="text-stone-900">Company Policy</strong> page lets you define organization-wide rules that apply to all agents. This includes:
       </DocP>
       <Table
-        headers={['Feature', 'How to use']}
+        headers={['Section', 'What you configure']}
         rows={[
-          ['Send a message', 'Type in the input box and press Enter or click Send'],
-          ['View tool calls', 'Tool calls appear as yellow cards between messages'],
-          ['Inspector panel', 'Right sidebar shows token count, cost, and latency per message'],
-          ['Clear conversation', 'Cmd+K (Mac) / Ctrl+K (Windows) or the Clear button'],
-          ['Export chat', 'Cmd+E / Ctrl+E downloads the full conversation as JSON'],
-          ['Keyboard shortcut', 'Shift+Enter for a new line without sending'],
+          ['Brand Voice', 'Company name, tone, language style'],
+          ['Escalation Rules', 'When to transfer to humans, hold procedures'],
+          ['Privacy Guidelines', 'Data handling, what agents can/cannot discuss'],
+          ['Compliance', 'Industry-specific regulations, disclaimers'],
         ]}
       />
-      <Note type="info">
-        The Playground calls the same LLM pipeline as real calls — what works here will work on the phone, minus the voice layer.
-      </Note>
+      <DocP>
+        Policy settings are automatically injected into every agent's context, ensuring consistent behavior across your organization.
+      </DocP>
 
       {/* ── ANALYTICS ────────────────────────────────────────────────────────── */}
       <DocHeading id="analytics">
-        <BarChart3 className="h-6 w-6 text-indigo-400" />
+        <BarChart3 className="h-6 w-6 text-indigo-600" />
         Analytics & Calls
       </DocHeading>
       <DocP>
-        The <strong className="text-white">Dashboard</strong> shows real-time call metrics and the <strong className="text-white">Calls</strong> page shows the full conversation history.
+        The <strong className="text-stone-900">Calls</strong> page shows your complete conversation history with filtering and search.
       </DocP>
       <Table
-        headers={['Metric', 'Where', 'Description']}
+        headers={['Column', 'Description']}
         rows={[
-          ['Active Calls', 'Dashboard', 'WebSocket connections currently open (live calls)'],
-          ["Today's Calls", 'Dashboard', 'Total calls started in the last 24 hours'],
-          ['Completed', 'Dashboard', 'Calls that ended normally'],
-          ['Failed / Abandoned', 'Dashboard', 'Calls that errored or the caller hung up early'],
-          ['Call Volume Chart', 'Dashboard', '24-hour bar chart of calls per hour'],
-          ['Duration', 'Calls page', 'Wall-clock time from first audio to call end'],
-          ['Cost', 'Calls page', 'Minutes consumed (deducted from your balance)'],
-          ['Sentiment', 'Calls page', 'AI-computed score: 😊 > 0.1 / 😞 < -0.1 / 😐 neutral'],
+          ['Status', 'Active (ongoing), Completed, Failed, or Abandoned'],
+          ['Duration', 'Wall-clock time from first audio to call end'],
+          ['Messages', 'Total turns in the conversation'],
+          ['Agent', 'Which agent handled the call'],
+          ['Sentiment', 'AI-computed: Positive (>0.1) / Negative (<-0.1) / Neutral'],
+          ['Cost', 'Minutes consumed from your balance'],
         ]}
       />
       <DocP>
-        The Calls page supports filtering by <strong className="text-white">status</strong> (Active, Completed, Failed, Abandoned) and by <strong className="text-white">Agent ID</strong>. Results are paginated at 20 per page.
+        Click any call row to see the full transcript, tool calls, and per-turn metrics.
       </DocP>
 
       {/* ── BILLING ──────────────────────────────────────────────────────────── */}
       <DocHeading id="billing">
-        <CreditCard className="h-6 w-6 text-green-400" />
+        <CreditCard className="h-6 w-6 text-emerald-600" />
         Billing
       </DocHeading>
       <DocP>
-        Velox AI uses a <strong className="text-white">usage-based model</strong> — you buy a block of minutes each month and they're deducted as calls are made. There are no per-seat fees or hidden costs.
+        Velox AI uses <strong className="text-stone-900">usage-based pricing</strong>. Buy a block of minutes each month — they're deducted as calls are made.
       </DocP>
       <Table
         headers={['Plan', 'Price', 'Minutes', 'Agents', 'Support']}
         rows={[
           ['Starter', '$49/mo', '1,000', 'Up to 5', 'Email'],
           ['Pro', '$199/mo', '5,000', 'Unlimited', 'Priority'],
-          ['Enterprise', '$499/mo', '20,000', 'Unlimited', '24/7 dedicated + SLA'],
+          ['Enterprise', '$499/mo', '20,000', 'Unlimited', '24/7 + SLA'],
         ]}
       />
       <DocP>
-        Checkout is handled by <strong className="text-white">Stripe</strong>. After subscribing, minutes are instantly added to your balance. All transactions (credits and usage debits) are visible in the Transaction History section of the Billing page.
+        Checkout is handled by Stripe. After subscribing, minutes are instantly added to your balance. View all transactions in the Billing page.
       </DocP>
       <Note type="warn">
-        Calls are gated at the WebSocket level — if your balance reaches zero, incoming calls receive a <DocCode>402 Payment Required</DocCode> response and are not connected.
+        When your balance reaches zero, incoming calls receive a <DocCode>402 Payment Required</DocCode> response and are not connected.
       </Note>
+
+      {/* ── AI PIPELINE ──────────────────────────────────────────────────────── */}
+      <DocHeading id="pipeline">
+        <Brain className="h-6 w-6 text-violet-600" />
+        AI Pipeline
+      </DocHeading>
+      <DocP>
+        The Velox AI pipeline uses <strong className="text-stone-900">LangGraph</strong> for orchestration and <strong className="text-stone-900">SGLang</strong> for inference, with intelligent multi-tier routing:
+      </DocP>
+      <DocBlock lang="text">{`Query routing architecture:
+
+                    ┌─────────────────┐
+User utterance ────► T0 Router       │ Intent classification
+                    │  Qwen3.5-3B    │ Routes to appropriate tier
+                    │  <30ms         │
+                    └────────┬───────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         ▼                   ▼                   ▼
+┌────────────────┐  ┌────────────────┐  ┌────────────────┐
+│ T1 Fast        │  │ T2 Medium      │  │ T3 Heavy       │
+│ Nemotron Nano  │  │ Qwen3.5-35B    │  │ Kimi K2.5 API  │
+│ ~100ms TTFT    │  │ ~200ms TTFT    │  │ ~500ms TTFT    │
+│ 70-80% of calls│  │ Tool calls     │  │ Complex cases  │
+└────────────────┘  └────────────────┘  └────────────────┘`}</DocBlock>
+      <DocP>
+        The router uses intent classification to decide which model handles each turn. Simple greetings and FAQs go to T1 for maximum speed. Tool calls and multi-turn reasoning go to T2. Complex edge cases fall back to T3.
+      </DocP>
+
+      {/* ── OBSERVABILITY ────────────────────────────────────────────────────── */}
+      <DocHeading id="observability">
+        <Layers className="h-6 w-6 text-teal-600" />
+        Observability
+      </DocHeading>
+      <DocP>
+        Velox AI includes comprehensive observability:
+      </DocP>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">LangSmith Tracing</h4>
+      <DocP>
+        Every conversation is traced end-to-end in LangSmith. Set <DocCode>LANGSMITH_API_KEY</DocCode> and <DocCode>LANGSMITH_PROJECT</DocCode> to enable:
+      </DocP>
+      <ul className="list-disc list-inside text-stone-600 space-y-1 mb-4 ml-2">
+        <li><strong className="text-stone-900">LangGraph traces</strong> — full state machine execution</li>
+        <li><strong className="text-stone-900">LLM spans</strong> — prompt, response, tokens, latency</li>
+        <li><strong className="text-stone-900">Tool spans</strong> — name, arguments, result</li>
+        <li><strong className="text-stone-900">Retrieval spans</strong> — RAG queries and results</li>
+      </ul>
+
+      <h4 className="text-base font-semibold text-stone-800 mt-6 mb-2">Prometheus Metrics</h4>
+      <DocP>Available at <DocCode>http://localhost:8080/metrics</DocCode>:</DocP>
+      <Table
+        headers={['Metric', 'Type', 'Description']}
+        rows={[
+          ['velox_calls_total', 'Counter', 'Total calls by status'],
+          ['velox_active_calls', 'Gauge', 'Currently open connections'],
+          ['velox_llm_latency_seconds', 'Histogram', 'LLM response time (p50/p95/p99)'],
+          ['velox_voice_e2e_latency', 'Histogram', 'Full turn latency: STT → LLM → TTS'],
+        ]}
+      />
 
       {/* ── API REFERENCE ────────────────────────────────────────────────────── */}
       <DocHeading id="api">
-        <Code2 className="h-6 w-6 text-pink-400" />
+        <Code2 className="h-6 w-6 text-pink-600" />
         API Reference
       </DocHeading>
 
       <DocSub id="api-auth">Authentication</DocSub>
       <DocP>
-        All protected API routes require a Clerk JWT token in the <DocCode>Authorization</DocCode> header:
+        All protected routes require a Clerk JWT in the <DocCode>Authorization</DocCode> header:
       </DocP>
       <DocBlock lang="http">{`GET /api/agents HTTP/1.1
 Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`}</DocBlock>
-      <DocP>
-        In the frontend, the <DocCode>api</DocCode> axios instance (in <DocCode>src/lib/api.ts</DocCode>) automatically attaches the Clerk session token to every request via a request interceptor.
-      </DocP>
-      <DocP>
-        The Admin endpoint uses a separate key:
-      </DocP>
-      <DocBlock lang="http">{`POST /api/admin/run-eval HTTP/1.1
-X-Admin-Key: your_admin_api_key_here`}</DocBlock>
 
       <DocSub id="api-agents">Agents endpoints</DocSub>
       <Table
-        headers={['Method', 'Route', 'Body / Params', 'Response']}
+        headers={['Method', 'Route', 'Description']}
         rows={[
-          ['GET', '/api/agents', '—', 'Agent[]'],
-          ['POST', '/api/agents', '{ name, phone_number, voice_id, system_prompt }', 'Agent'],
-          ['GET', '/api/agents/:id', '—', 'Agent'],
-          ['PATCH', '/api/agents/:id', 'Partial<Agent>', 'Agent'],
-          ['DELETE', '/api/agents/:id', '—', '{ success: true }'],
+          ['GET', '/api/agents', 'List all agents for the organization'],
+          ['POST', '/api/agents', 'Create a new agent'],
+          ['GET', '/api/agents/:id', 'Get agent by ID'],
+          ['PATCH', '/api/agents/:id', 'Update agent'],
+          ['DELETE', '/api/agents/:id', 'Delete agent'],
         ]}
       />
 
       <DocSub id="api-conversations">Conversations endpoints</DocSub>
       <Table
-        headers={['Method', 'Route', 'Query params', 'Response']}
+        headers={['Method', 'Route', 'Description']}
         rows={[
-          ['GET', '/api/conversations', 'page, limit, status, agentId', '{ conversations[], pagination }'],
-          ['GET', '/api/conversations/:id', '—', 'Conversation + messages[]'],
+          ['GET', '/api/conversations', 'List conversations (paginated)'],
+          ['GET', '/api/conversations/:id', 'Get conversation with messages'],
         ]}
       />
 
-      <DocSub id="api-docs">Document / Knowledge endpoints</DocSub>
+      <DocSub id="api-docs">Document endpoints</DocSub>
       <Table
-        headers={['Method', 'Route', 'Body', 'Response']}
+        headers={['Method', 'Route', 'Description']}
         rows={[
-          ['POST', '/api/documents/upload', 'multipart: file, kb_id', '{ status, chunks, skipped }'],
-          ['GET', '/api/documents', 'kb_id (query)', 'Document[]'],
+          ['POST', '/api/documents/upload', 'Upload document (multipart)'],
+          ['GET', '/api/documents', 'List documents'],
+          ['DELETE', '/api/documents/:id', 'Delete document'],
         ]}
       />
-
-      <DocSub id="api-billing">Billing endpoints</DocSub>
-      <Table
-        headers={['Method', 'Route', 'Body', 'Response']}
-        rows={[
-          ['GET', '/api/billing/:orgId', '—', '{ credit_balance, current_plan, subscription, transactions }'],
-          ['POST', '/api/billing/checkout', '{ orgId, planType, successUrl, cancelUrl }', '{ url }'],
-          ['POST', '/api/billing/:orgId/cancel', '—', '{ success }'],
-        ]}
-      />
-
-      {/* ── AI PIPELINE ──────────────────────────────────────────────────────── */}
-      <DocHeading id="pipeline">
-        <Brain className="h-6 w-6 text-purple-400" />
-        AI Pipeline
-      </DocHeading>
-      <DocP>
-        The multi-agent routing pipeline lives in the <DocCode>agents/</DocCode> service, built with <strong className="text-white">Google ADK (Agent Development Kit)</strong>.
-      </DocP>
-      <DocBlock lang="text">{`Query complexity routing:
-
-                    ┌─────────────────┐
-User utterance ────► Phi-3-mini SLM  │ Simple FAQs, yes/no, greetings
-                    │  ~50ms          │ Runs locally in container, zero API cost
-                    └────────┬────────┘
-                      complex?│
-                    ┌─────────▼────────┐
-                    │  Gemini Flash    │ Multi-turn, tool calling, reasoning
-                    │  ~400ms          │ ~70% of production calls land here
-                    └────────┬─────────┘
-                      critical?│
-                    ┌──────────▼───────┐
-                    │  Gemini Pro      │ Legal, medical, complex negotiation
-                    │  ~900ms          │ Highest accuracy, highest cost
-                    └──────────────────┘`}</DocBlock>
-      <DocP>
-        The router uses a lightweight intent classifier to decide which model handles each turn. Tool calls always go through Gemini (Flash or Pro) since Phi-3 doesn't support function calling.
-      </DocP>
-      <Note type="tip">
-        The Phi-3 SLM is optional. Start it with <DocCode>docker compose --profile slm up</DocCode>. If not running, all queries fall through to Gemini Flash automatically.
-      </Note>
-
-      {/* ── OBSERVABILITY ────────────────────────────────────────────────────── */}
-      <DocHeading id="observability">
-        <Layers className="h-6 w-6 text-teal-400" />
-        Observability
-      </DocHeading>
-      <DocP>
-        Velox AI ships with three observability layers:
-      </DocP>
-
-      <h4 className="text-base font-semibold text-slate-100 mt-6 mb-2">Prometheus Metrics</h4>
-      <DocP>Scraped at <DocCode>http://localhost:8080/metrics</DocCode>:</DocP>
-      <Table
-        headers={['Metric', 'Type', 'Labels', 'Description']}
-        rows={[
-          ['velox_calls_total', 'Counter', 'status', 'Total calls by status (completed/failed)'],
-          ['velox_active_calls', 'Gauge', '—', 'Currently open WebSocket connections'],
-          ['velox_llm_latency_seconds', 'Histogram', 'model', 'LLM response time with p50/p95/p99 buckets'],
-          ['velox_tts_latency_seconds', 'Histogram', 'provider', 'TTS generation time'],
-          ['velox_e2e_latency_seconds', 'Histogram', '—', 'Full turn latency: STT → LLM → TTS'],
-        ]}
-      />
-
-      <h4 className="text-base font-semibold text-slate-100 mt-6 mb-2">MLflow</h4>
-      <DocP>
-        Start with <DocCode>--profile mlflow</DocCode> to get the MLflow UI at <DocCode>http://localhost:5001</DocCode>. The admin eval endpoint (<DocCode>POST /api/admin/run-eval</DocCode>) triggers a DeepEval test suite and logs results as MLflow experiments.
-      </DocP>
-
-      <h4 className="text-base font-semibold text-slate-100 mt-6 mb-2">LangFuse Tracing</h4>
-      <DocP>
-        Set <DocCode>LANGFUSE_PUBLIC_KEY</DocCode> and <DocCode>LANGFUSE_SECRET_KEY</DocCode> to enable per-call LLM tracing. Every call gets a trace with:
-      </DocP>
-      <ul className="list-disc list-inside text-slate-300 space-y-1 mb-4 ml-2">
-        <li><strong className="text-white">STT span</strong> — transcript text, confidence score, word count</li>
-        <li><strong className="text-white">LLM span</strong> — prompt, response, model, token count, latency</li>
-        <li><strong className="text-white">Tool spans</strong> — tool name, arguments, result</li>
-        <li><strong className="text-white">TTS span</strong> — character count, provider, latency</li>
-      </ul>
 
       {/* ── SECURITY ─────────────────────────────────────────────────────────── */}
       <DocHeading id="security">
-        <Shield className="h-6 w-6 text-slate-400" />
+        <Shield className="h-6 w-6 text-stone-600" />
         Security
       </DocHeading>
       <Table
         headers={['Feature', 'Implementation']}
         rows={[
-          ['Authentication', 'Clerk RS256 JWT — validated server-side on every protected request'],
-          ['Multi-tenancy', 'All DB queries filtered by org_id from the verified JWT claim'],
-          ['Twilio webhook validation', 'TWILIO_AUTH_TOKEN validates X-Twilio-Signature on every inbound call'],
-          ['Stripe webhook validation', 'STRIPE_WEBHOOK_SECRET validates Stripe-Signature on every billing event'],
-          ['Billing gate', 'WebSocket upgrade refused with 402 if org has zero minutes'],
-          ['Admin endpoint', 'Separate ADMIN_API_KEY header — never exposed to frontend'],
-          ['Secrets', 'All credentials in environment variables — never hardcoded'],
-          ['CORS', 'Restricted to DASHBOARD_URL (default: http://localhost:5173)'],
-          ['Helmet', 'Security headers set on all API responses'],
+          ['Authentication', 'Clerk RS256 JWT validated on every request'],
+          ['Multi-tenancy', 'All queries filtered by org_id from JWT'],
+          ['Webhook validation', 'Twilio and Stripe signatures verified'],
+          ['Billing gate', 'WebSocket upgrade refused with 402 if no credits'],
+          ['CORS', 'Restricted to configured DASHBOARD_URL'],
+          ['Headers', 'Helmet security headers on all responses'],
         ]}
       />
       <Note type="warn">
-        Change <DocCode>ADMIN_API_KEY</DocCode> from the default <DocCode>dev-admin-key-change-me</DocCode> before deploying to production.
+        Change default API keys (<DocCode>ADMIN_API_KEY</DocCode>) before deploying to production.
       </Note>
 
       {/* bottom padding */}
@@ -754,30 +741,30 @@ export default function DocsPage() {
   const [activeSection, setActiveSection] = useState('overview')
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-[#faf9f7] text-stone-900">
       {/* Top nav */}
-      <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/80 backdrop-blur-sm">
         <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="text-slate-300 hover:text-white hover:bg-slate-800">
+            <Button variant="ghost" size="sm" asChild className="text-stone-600 hover:text-stone-900 hover:bg-stone-100">
               <Link to="/" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Link>
             </Button>
-            <div className="h-4 w-px bg-slate-700" />
+            <div className="h-4 w-px bg-stone-300" />
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-blue-400" />
-              <span className="font-semibold text-white">Velox AI</span>
-              <ChevronRight className="h-4 w-4 text-slate-600" />
-              <span className="text-slate-300">Documentation</span>
+              <Bot className="h-5 w-5 text-amber-600" />
+              <span className="font-semibold text-stone-900">Velox AI</span>
+              <ChevronRight className="h-4 w-4 text-stone-400" />
+              <span className="text-stone-600">Documentation</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className="bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600/30">
-              v1.0
+            <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+              v2.0
             </Badge>
-            <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-500 text-white">
+            <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-500 text-white">
               <Link to="/agents">Open Dashboard</Link>
             </Button>
           </div>
@@ -786,17 +773,17 @@ export default function DocsPage() {
 
       <div className="max-w-screen-xl mx-auto flex">
         {/* Sidebar */}
-        <aside className="w-64 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto border-r border-slate-800 py-6 px-3 hidden lg:block">
+        <aside className="w-64 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto border-r border-stone-200 bg-white py-6 px-3 hidden lg:block">
           <nav className="space-y-1">
             {sections.map((section) => (
               <div key={section.id}>
                 <a
                   href={`#${section.id}`}
                   onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                     activeSection === section.id
-                      ? 'bg-blue-600/20 text-blue-300'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-amber-100 text-amber-800 font-medium'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
                   }`}
                 >
                   <section.icon className="h-4 w-4 shrink-0" />
@@ -808,7 +795,7 @@ export default function DocsPage() {
                       <a
                         key={sub.id}
                         href={`#${sub.id}`}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition-colors"
                       >
                         <ChevronRight className="h-3 w-3 shrink-0" />
                         {sub.label}
@@ -822,7 +809,7 @@ export default function DocsPage() {
         </aside>
 
         {/* Content */}
-        <main className="flex-1 min-w-0 px-8 py-10">
+        <main className="flex-1 min-w-0 px-8 py-10 bg-white border-x border-stone-100">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -830,12 +817,12 @@ export default function DocsPage() {
           >
             {/* Page title */}
             <div className="mb-10">
-              <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+              <div className="flex items-center gap-2 text-sm text-stone-500 mb-3">
                 <BookOpen className="h-4 w-4" />
                 <span>Velox AI Documentation</span>
               </div>
-              <h1 className="text-4xl font-bold text-white mb-3">Platform Documentation</h1>
-              <p className="text-lg text-slate-400">
+              <h1 className="text-4xl font-bold text-stone-900 mb-3">Platform Documentation</h1>
+              <p className="text-lg text-stone-600">
                 Everything you need to build, deploy, and scale AI voice agents with Velox AI.
               </p>
             </div>
@@ -845,14 +832,14 @@ export default function DocsPage() {
         </main>
 
         {/* Right mini-nav (on-this-page) */}
-        <div className="w-48 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-6 px-4 hidden xl:block">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">On this page</p>
+        <div className="w-48 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-6 px-4 hidden xl:block bg-[#faf9f7]">
+          <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mb-3">On this page</p>
           <nav className="space-y-1">
             {sections.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="block text-xs text-slate-500 hover:text-slate-300 py-1 transition-colors"
+                className="block text-xs text-stone-500 hover:text-amber-600 py-1 transition-colors"
               >
                 {s.label}
               </a>
