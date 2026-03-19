@@ -1,10 +1,9 @@
 // src/pages/Calls.tsx
-// 5.5 — Calls page: paginated table of conversations with date range + status filters.
-//        Uses TanStack Query for data fetching from GET /api/conversations.
+// Calls page: paginated table of conversations with date range + status filters.
+// Uses TanStack Query for data fetching from GET /api/conversations.
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,9 +15,12 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
-  LayoutDashboard,
   Search,
   Loader2,
+  Clock,
+  MessageSquare,
+  TrendingUp,
+  AlertCircle,
 } from 'lucide-react'
 import api from '@/lib/api'
 
@@ -54,17 +56,17 @@ function formatDuration(secs: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`
 }
 
-function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+function statusColor(status: string): string {
   switch (status) {
     case 'ACTIVE':
-      return 'default'
+      return 'bg-emerald-100 text-emerald-700 border-emerald-200'
     case 'COMPLETED':
-      return 'secondary'
+      return 'bg-stone-100 text-stone-700 border-stone-200'
     case 'FAILED':
     case 'ABANDONED':
-      return 'destructive'
+      return 'bg-red-100 text-red-700 border-red-200'
     default:
-      return 'outline'
+      return 'bg-stone-100 text-stone-600 border-stone-200'
   }
 }
 
@@ -87,7 +89,7 @@ export default function Calls() {
     queryKey: ['conversations', page, statusFilter, agentIdFilter],
     queryFn: () =>
       api.get<ApiResponse>(`/api/conversations?${params.toString()}`).then((r) => r.data),
-    placeholderData: (prev) => prev, // keep old data while loading next page
+    placeholderData: (prev) => prev,
   })
 
   const conversations = data?.conversations ?? []
@@ -98,40 +100,98 @@ export default function Calls() {
     setPage(1)
   }
 
+  // Calculate stats
+  const totalCalls = pagination?.total ?? 0
+  const avgDuration = conversations.length > 0
+    ? Math.round(conversations.reduce((sum, c) => sum + durationSecs(c.start_time, c.end_time), 0) / conversations.length)
+    : 0
+  const avgMessages = conversations.length > 0
+    ? Math.round(conversations.reduce((sum, c) => sum + c._count.messages, 0) / conversations.length)
+    : 0
+
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#faf9f7]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
+        className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10"
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Phone className="h-6 w-6 text-blue-400" />
-            <h1 className="text-xl font-semibold text-white">Calls</h1>
+            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Phone className="h-4 w-4 text-amber-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-stone-900">Calls</h1>
+              <p className="text-xs text-stone-500">View and analyze your conversation history</p>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" asChild
-            className="text-slate-300 hover:text-white hover:bg-slate-800">
-            <Link to="/dashboard">
-              <LayoutDashboard className="h-4 w-4 mr-1" />
-              Dashboard
-            </Link>
-          </Button>
+          <Badge variant="outline" className="border-stone-300 text-stone-600 text-xs">
+            {totalCalls} total calls
+          </Badge>
         </div>
       </motion.header>
 
       <div className="container mx-auto px-6 py-8 space-y-6">
+        {/* Stats Cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          <Card className="bg-white border-stone-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Phone className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-stone-900">{totalCalls}</p>
+                  <p className="text-xs text-stone-500">Total Calls</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-stone-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-stone-900">{formatDuration(avgDuration)}</p>
+                  <p className="text-xs text-stone-500">Avg Duration</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-stone-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-stone-900">{avgMessages}</p>
+                  <p className="text-xs text-stone-500">Avg Messages</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
           className="flex flex-wrap gap-4 items-end"
         >
           <div className="space-y-1.5">
-            <Label>Status</Label>
+            <Label className="text-stone-700 text-xs">Status</Label>
             <Select value={statusFilter} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 bg-white border-stone-300 text-stone-900">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -145,11 +205,11 @@ export default function Calls() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Agent ID</Label>
+            <Label className="text-stone-700 text-xs">Agent ID</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
               <Input
-                className="pl-9 w-60"
+                className="pl-9 w-60 bg-white border-stone-300 text-stone-900 placeholder:text-stone-400"
                 placeholder="Filter by agent ID…"
                 value={agentIdFilter}
                 onChange={(e) => {
@@ -159,46 +219,48 @@ export default function Calls() {
               />
             </div>
           </div>
-
-          {pagination && (
-            <p className="text-sm text-muted-foreground ml-auto self-end">
-              {pagination.total} conversations
-            </p>
-          )}
         </motion.div>
 
         {/* Table Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.15 }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Conversation History</CardTitle>
+          <Card className="bg-white border-stone-200">
+            <CardHeader className="border-b border-stone-100">
+              <CardTitle className="text-stone-900 text-base">Conversation History</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {isLoading && (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <div className="flex items-center justify-center py-16 text-stone-500">
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
                   Loading…
                 </div>
               )}
               {isError && (
-                <p className="text-sm text-destructive py-8 text-center">
-                  Failed to load calls.
-                </p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <p className="text-sm text-red-600 font-medium">Failed to load calls</p>
+                  <p className="text-xs text-stone-500 mt-1">Please try again later</p>
+                </div>
               )}
               {!isLoading && conversations.length === 0 && (
-                <p className="text-sm text-muted-foreground py-12 text-center">
-                  No calls found.
-                </p>
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="h-16 w-16 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
+                    <Phone className="h-8 w-8 text-stone-400" />
+                  </div>
+                  <p className="text-stone-900 font-medium">No calls found</p>
+                  <p className="text-sm text-stone-500 mt-1">Calls will appear here once agents start taking them</p>
+                </div>
               )}
 
               {conversations.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="border-b bg-muted/30">
+                    <thead className="border-b border-stone-100 bg-stone-50/50">
                       <tr>
                         {[
                           'Agent',
@@ -206,55 +268,57 @@ export default function Calls() {
                           'Started',
                           'Duration',
                           'Messages',
-                          'Cost (min)',
+                          'Cost',
                           'Sentiment',
                         ].map((h) => (
                           <th
                             key={h}
-                            className="text-left px-4 py-3 font-medium text-muted-foreground text-xs"
+                            className="text-left px-4 py-3 font-medium text-stone-500 text-xs"
                           >
                             {h}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-stone-100">
                       {conversations.map((c) => (
-                        <tr key={c.id} className="hover:bg-muted/20 transition-colors">
-                          <td className="px-4 py-3 font-medium">{c.agent.name}</td>
+                        <tr key={c.id} className="hover:bg-stone-50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-stone-900">{c.agent.name}</td>
                           <td className="px-4 py-3">
-                            <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                            <Badge className={`${statusColor(c.status)} text-xs`}>{c.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-4 py-3 text-stone-600">
                             {new Date(c.start_time).toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-4 py-3 text-stone-600">
                             {formatDuration(durationSecs(c.start_time, c.end_time))}
                           </td>
-                          <td className="px-4 py-3 text-center">{c._count.messages}</td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {Number(c.cost_accrued).toFixed(2)}
+                          <td className="px-4 py-3 text-center text-stone-600">{c._count.messages}</td>
+                          <td className="px-4 py-3 text-stone-600">
+                            ${Number(c.cost_accrued).toFixed(2)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             {c.sentiment_score !== null ? (
-                              <span
-                                className={
-                                  c.sentiment_score > 0.1
-                                    ? 'text-green-600'
-                                    : c.sentiment_score < -0.1
-                                    ? 'text-red-500'
-                                    : 'text-muted-foreground'
-                                }
-                              >
-                                {c.sentiment_score > 0.1
-                                  ? '😊'
-                                  : c.sentiment_score < -0.1
-                                  ? '😞'
-                                  : '😐'}{' '}
-                                {c.sentiment_score.toFixed(2)}
+                              <span className="flex items-center justify-center gap-1">
+                                {c.sentiment_score > 0.1 ? (
+                                  <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                                ) : c.sentiment_score < -0.1 ? (
+                                  <TrendingUp className="h-3.5 w-3.5 text-red-500 rotate-180" />
+                                ) : null}
+                                <span
+                                  className={
+                                    c.sentiment_score > 0.1
+                                      ? 'text-emerald-600'
+                                      : c.sentiment_score < -0.1
+                                      ? 'text-red-500'
+                                      : 'text-stone-500'
+                                  }
+                                >
+                                  {c.sentiment_score.toFixed(2)}
+                                </span>
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="text-stone-400">—</span>
                             )}
                           </td>
                         </tr>
@@ -269,17 +333,23 @@ export default function Calls() {
 
         {/* Pagination */}
         {pagination && pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center justify-center gap-4"
+          >
             <Button
               variant="outline"
               size="sm"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
+              className="border-stone-300 text-stone-700 hover:bg-stone-100"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-stone-600">
               Page {pagination.page} of {pagination.pages}
             </span>
             <Button
@@ -287,11 +357,12 @@ export default function Calls() {
               size="sm"
               disabled={page >= pagination.pages}
               onClick={() => setPage((p) => p + 1)}
+              className="border-stone-300 text-stone-700 hover:bg-stone-100"
             >
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

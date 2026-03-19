@@ -31,7 +31,7 @@ import {
   AlertTriangle,
   Lock,
   MessageSquare,
-  Zap,
+  Building2,
   Info,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -43,6 +43,7 @@ interface PolicySection {
   title: string
   icon: React.ElementType
   color: string
+  bgColor: string
   description: string
   fields: PolicyField[]
 }
@@ -153,7 +154,8 @@ const SECTIONS: PolicySection[] = [
     id: 'brandVoice',
     title: 'Brand Voice',
     icon: MessageSquare,
-    color: 'text-blue-400',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
     description: 'Define how your agents communicate — tone, personality, and what they must never say.',
     fields: [
       {
@@ -190,7 +192,8 @@ const SECTIONS: PolicySection[] = [
     id: 'escalation',
     title: 'Escalation Rules',
     icon: AlertTriangle,
-    color: 'text-amber-400',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-100',
     description: 'When should an agent hand off to a human? Define triggers and the handoff message.',
     fields: [
       {
@@ -227,7 +230,8 @@ const SECTIONS: PolicySection[] = [
     id: 'dataPrivacy',
     title: 'Data & Privacy',
     icon: Lock,
-    color: 'text-emerald-400',
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-100',
     description: 'Specify what personal data agents may collect, store, and share.',
     fields: [
       {
@@ -264,7 +268,8 @@ const SECTIONS: PolicySection[] = [
     id: 'compliance',
     title: 'Compliance',
     icon: Shield,
-    color: 'text-violet-400',
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-100',
     description: 'Regulatory frameworks, legal disclaimers, and recording notices.',
     fields: [
       {
@@ -375,29 +380,29 @@ export default function CompanyPolicy() {
     : '—'
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#faf9f7]">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b border-slate-800 bg-slate-950/95 backdrop-blur sticky top-0 z-10"
+        className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10"
       >
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-              <Shield className="h-4 w-4 text-violet-400" />
+            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Shield className="h-4 w-4 text-amber-600" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">Company Policy</h1>
-              <p className="text-xs text-slate-500">
+              <h1 className="text-lg font-semibold text-stone-900">Company Policy</h1>
+              <p className="text-xs text-stone-500">
                 AI governance, brand voice, and compliance rules for your agents
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {policy.updatedAt && (
-              <span className="text-xs text-slate-600 hidden sm:block">
+              <span className="text-xs text-stone-500 hidden sm:block">
                 Last saved: {lastUpdated}
               </span>
             )}
@@ -405,7 +410,7 @@ export default function CompanyPolicy() {
               variant="ghost"
               size="sm"
               onClick={handleReset}
-              className="text-slate-400 hover:text-white hover:bg-slate-800"
+              className="text-stone-500 hover:text-stone-900 hover:bg-stone-100"
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Reset
@@ -414,12 +419,12 @@ export default function CompanyPolicy() {
               size="sm"
               onClick={handleSave}
               disabled={saving}
-              className="bg-violet-600 hover:bg-violet-500 text-white"
+              className="bg-amber-600 hover:bg-amber-500 text-white"
             >
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
               ) : saved ? (
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-400" />
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-white" />
               ) : (
                 <Save className="h-3.5 w-3.5 mr-1.5" />
               )}
@@ -435,10 +440,10 @@ export default function CompanyPolicy() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4"
+          className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4"
         >
-          <Info className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-          <p className="text-sm text-blue-300 leading-relaxed">
+          <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-sm text-amber-800 leading-relaxed">
             This policy is saved locally and can be referenced when configuring agent system prompts.
             Use the <strong>Copy JSON</strong> button to paste the full policy into an agent's instructions.
           </p>
@@ -449,29 +454,29 @@ export default function CompanyPolicy() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4"
+          className="bg-white border border-stone-200 rounded-xl p-6 space-y-4"
         >
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Zap className="h-4 w-4 text-blue-400" />
+          <h2 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-amber-600" />
             Company Details
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-slate-300 text-xs">Company Name</Label>
+              <Label className="text-stone-600 text-xs">Company Name</Label>
               <Input
                 value={policy.companyName}
                 onChange={(e) => setPolicy((p) => ({ ...p, companyName: e.target.value }))}
                 placeholder="Acme Corp"
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500"
+                className="bg-white border-stone-300 text-stone-900 placeholder:text-stone-400 focus:border-amber-500"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-slate-300 text-xs">Effective Date</Label>
+              <Label className="text-stone-600 text-xs">Effective Date</Label>
               <Input
                 type="date"
                 value={policy.effectiveDate}
                 onChange={(e) => setPolicy((p) => ({ ...p, effectiveDate: e.target.value }))}
-                className="bg-slate-800 border-slate-700 text-white focus:border-violet-500"
+                className="bg-white border-stone-300 text-stone-900 focus:border-amber-500"
               />
             </div>
           </div>
@@ -487,26 +492,26 @@ export default function CompanyPolicy() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 + idx * 0.05 }}
-              className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden"
+              className="bg-white border border-stone-200 rounded-xl overflow-hidden"
             >
               {/* Section header — clickable to expand */}
               <button
                 onClick={() => toggleSection(section.id)}
-                className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-800/50 transition-colors"
+                className="w-full flex items-center justify-between px-6 py-4 hover:bg-stone-50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center`}>
+                  <div className={`h-8 w-8 rounded-lg ${section.bgColor} flex items-center justify-center`}>
                     <Icon className={`h-4 w-4 ${section.color}`} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-white">{section.title}</p>
-                    <p className="text-xs text-slate-500">{section.description}</p>
+                    <p className="text-sm font-semibold text-stone-900">{section.title}</p>
+                    <p className="text-xs text-stone-500">{section.description}</p>
                   </div>
                 </div>
                 {isOpen ? (
-                  <ChevronUp className="h-4 w-4 text-slate-500 shrink-0" />
+                  <ChevronUp className="h-4 w-4 text-stone-400 shrink-0" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-slate-500 shrink-0" />
+                  <ChevronDown className="h-4 w-4 text-stone-400 shrink-0" />
                 )}
               </button>
 
@@ -520,10 +525,10 @@ export default function CompanyPolicy() {
                     transition={{ duration: 0.2, ease: 'easeInOut' }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 pb-6 space-y-5 border-t border-slate-800 pt-5">
+                    <div className="px-6 pb-6 space-y-5 border-t border-stone-100 pt-5">
                       {section.fields.map((field) => (
                         <div key={field.key} className="space-y-1.5">
-                          <Label className="text-slate-300 text-xs">{field.label}</Label>
+                          <Label className="text-stone-600 text-xs">{field.label}</Label>
                           {field.type === 'textarea' ? (
                             <Textarea
                               rows={4}
@@ -534,7 +539,7 @@ export default function CompanyPolicy() {
                                 )
                               }
                               placeholder={field.placeholder}
-                              className="resize-y bg-slate-800 border-slate-700 text-white placeholder:text-slate-600 focus:border-violet-500 text-sm leading-relaxed"
+                              className="resize-y bg-white border-stone-300 text-stone-900 placeholder:text-stone-400 focus:border-amber-500 text-sm leading-relaxed"
                             />
                           ) : (
                             <Input
@@ -545,11 +550,11 @@ export default function CompanyPolicy() {
                                 )
                               }
                               placeholder={field.placeholder}
-                              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500"
+                              className="bg-white border-stone-300 text-stone-900 placeholder:text-stone-400 focus:border-amber-500"
                             />
                           )}
                           {field.help && (
-                            <p className="text-xs text-slate-500">{field.help}</p>
+                            <p className="text-xs text-stone-500">{field.help}</p>
                           )}
                         </div>
                       ))}
@@ -566,18 +571,18 @@ export default function CompanyPolicy() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4"
+          className="bg-white border border-stone-200 rounded-xl p-6 space-y-4"
         >
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-slate-400" />
-            <h2 className="text-sm font-semibold text-white">Custom Notes</h2>
+            <FileText className="h-4 w-4 text-stone-500" />
+            <h2 className="text-sm font-semibold text-stone-900">Custom Notes</h2>
           </div>
           <Textarea
             rows={5}
             value={policy.custom.notes}
             onChange={(e) => setPolicy((p) => ({ ...p, custom: { notes: e.target.value } }))}
             placeholder="Any additional policy notes, edge cases, or agent-specific instructions not covered above…"
-            className="resize-y bg-slate-800 border-slate-700 text-white placeholder:text-slate-600 focus:border-violet-500 text-sm leading-relaxed"
+            className="resize-y bg-white border-stone-300 text-stone-900 placeholder:text-stone-400 focus:border-amber-500 text-sm leading-relaxed"
           />
         </motion.div>
 
@@ -586,19 +591,19 @@ export default function CompanyPolicy() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden"
+          className="bg-white border border-stone-200 rounded-xl overflow-hidden"
         >
           <button
             onClick={() => setShowJson((v) => !v)}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-800/50 transition-colors"
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-slate-400" />
+              <div className="h-8 w-8 rounded-lg bg-stone-100 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-stone-600" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-white">Export Policy JSON</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-semibold text-stone-900">Export Policy JSON</p>
+                <p className="text-xs text-stone-500">
                   Copy this into your agent's system prompt to enforce the full policy
                 </p>
               </div>
@@ -608,15 +613,15 @@ export default function CompanyPolicy() {
                 size="sm"
                 variant="outline"
                 onClick={(e) => { e.stopPropagation(); handleCopyJson() }}
-                className="h-7 border-slate-700 text-slate-300 hover:text-white"
+                className="h-7 border-stone-300 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
               >
                 {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
               {showJson ? (
-                <ChevronUp className="h-4 w-4 text-slate-500" />
+                <ChevronUp className="h-4 w-4 text-stone-400" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-slate-500" />
+                <ChevronDown className="h-4 w-4 text-stone-400" />
               )}
             </div>
           </button>
@@ -630,8 +635,8 @@ export default function CompanyPolicy() {
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-slate-800 p-4">
-                  <pre className="text-xs text-slate-300 bg-slate-950 rounded-lg p-4 overflow-x-auto leading-relaxed max-h-80 overflow-y-auto">
+                <div className="border-t border-stone-100 p-4">
+                  <pre className="text-xs text-stone-700 bg-stone-50 rounded-lg p-4 overflow-x-auto leading-relaxed max-h-80 overflow-y-auto border border-stone-200">
                     {JSON.stringify(policy, null, 2)}
                   </pre>
                 </div>
@@ -646,12 +651,12 @@ export default function CompanyPolicy() {
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="bg-violet-600 hover:bg-violet-500 text-white px-6"
+            className="bg-amber-600 hover:bg-amber-500 text-white px-6"
           >
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : saved ? (
-              <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-400" />
+              <CheckCircle2 className="h-4 w-4 mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
